@@ -1,0 +1,45 @@
+[package]
+name = "ree-cookie"
+version = "0.1.1"
+edition = "2021"
+
+[workspace]
+members = ["."]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+
+candid = "0.10"
+ic-cdk = "0.17"
+ic-cdk-macros = "0.17"
+ic-stable-structures = "0.6"
+ic-canisters-http-types = { git = "https://github.com/dfinity/ic", tag = "release-2024-03-06_23-01+p2p" }
+ic-canister-log = { git = "https://github.com/dfinity/ic", tag = "release-2024-01-18_23-01" }
+
+anyhow =  "1"
+thiserror = "1"
+hex = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_derive = "1.0"
+serde_bytes = "0.11"
+serde_json = "1.0"
+cfg-if = "1.0"
+time = "0.3"
+
+# ree-types = { git = "https://github.com/octopus-network/ree-types.git", rev = "a48b38f16efdb1e9703e6e9c45af681ae2b61f59" }
+# ree-types = "0.3"
+# ree-types = { git =  "https://github.com/octopus-network/ree-types.git", rev = "1bc6810a7aac2576c32bdca26b6dd399b1a307eb" }
+ree-types = { git =  "https://github.com/octopus-network/ree-types.git", rev = "6d98cd59310a86d951105cbf4cf2a4feed2e2057" }
+bincode = "1.3.3"
+itertools = "0.14.0"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+ic-agent = "0.39"
+# ree-orchestrator = { git="https://github.com/octopus-network/ree-orchestrator.git", branch="main" }
+
+[features]
+default = ["testnet"]
+testnet = []

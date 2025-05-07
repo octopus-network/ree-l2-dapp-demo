@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "canisters": {
+      "ree_cookie": {
+        "type": "rust",
+        "package": "ree-cookie",
+        "candid": "./ree_cookie.did",
+        "gzip": true
+      }
+    },
+    "defaults": {
+      "build": {
+        "packtool": "",
+        "args": ""
+      }
+    }
+  }
