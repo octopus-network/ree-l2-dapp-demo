@@ -46,4 +46,4 @@ Ree Game Demo is an example Play-to-Earn project base [REE](https://www.omnity.n
 
 ## Frontend
 
-[The frontend repo](https://github.com/octopus-network/ree-cookie-frontend)
+[The frontend repo](https://github.com/octopus-network/ree-game-demo/tree/main/ree-cookie-frontend)

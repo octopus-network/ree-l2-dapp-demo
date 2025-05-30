@@ -21,6 +21,8 @@ function App() {
   const [gameStatus, setGameStatus] = useState<GameStatus | undefined>(undefined);
   const [exchangeState, setExchangeState] = useState<ExchangeState | undefined>(undefined);
 
+  console.log({address, paymentAddress})
+
   useEffect(() => {
     cookieActor.get_exchange_state().then((e) => {
       setExchangeState(e)

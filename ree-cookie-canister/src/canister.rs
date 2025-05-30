@@ -28,7 +28,7 @@ use ree_types::{
         PoolBasic, PoolInfo, RollbackTxArgs, RollbackTxResponse,
     },
     psbt::ree_pool_sign,
-    CoinBalance, Intention, Pubkey, Txid, Utxo,
+    CoinBalance, Intention, Pubkey, Utxo,
 };
 
 #[init]

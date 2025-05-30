@@ -13,9 +13,11 @@ export function AccountButton({ }: {
         return null
     }
 
-    return <div className="flex items-center">
+    return <div className="flex items-start">
         { <div>{identity?.getPrincipal().toText()}</div>}
         <div className="mr-5">{identityAddress}</div>
+        <div className="mr-5">address: {address}</div>
+        <div className="mr-5">payment address: {paymentAddress}</div>
         <Button onClick={()=>{clear(); disconnect()}}>logout</Button>
         {/* <button>
             {address}
