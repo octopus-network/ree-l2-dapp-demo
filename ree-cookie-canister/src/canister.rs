@@ -12,7 +12,7 @@ use crate::{
     memory::{
         mutate_state, read_state, set_state, ADDRESS_PRINCIPLE_MAP, BLOCKS, GAMER, TX_RECORDS,
     },
-    state::{ExchangeState, GameStatus, PoolState},
+    state::{ExchangeState, PoolState},
     utils::{
         calculate_premine_rune_amount, tweak_pubkey_with_empty, AddLiquidityInfo, ExecuteTxGuard, RegisterInfo
     },

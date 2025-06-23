@@ -1,10 +1,8 @@
 use ic_cdk::api::management_canister::bitcoin::Satoshi;
 use ic_stable_structures::storable::Bound;
 use ic_stable_structures::Storable;
-use itertools::Itertools;
 use ree_types::{CoinBalance, CoinId, InputCoin, OutputCoin};
 use std::borrow::Cow;
-use std::collections::HashSet;
 
 use crate::game::game::Game;
 use crate::memory::{read_state, GAMER};
@@ -27,8 +25,6 @@ pub struct ExchangeState {
     pub etching_key: Option<String>,
     pub richswap_pool_address: String,
     pub game_status: GameStatus,
-    #[serde(default)]
-    pub executing_pools: HashSet<String>
 }
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
@@ -113,7 +109,6 @@ impl ExchangeState {
             etching_key: None,
             richswap_pool_address,
             game_status: GameStatus::InitKey,
-            executing_pools: HashSet::new(),
         }
     }
 

@@ -1,28 +1,30 @@
 use ic_cdk::api::management_canister::bitcoin::{BitcoinNetwork, Satoshi};
 use ree_types::bitcoin::key::{Secp256k1, TapTweak, TweakedPublicKey};
 
-use crate::{memory::{mutate_state, read_state}, *};
+use crate::{
+    memory::{read_state, EXECUTING_POOLS},
+    *,
+};
 
 #[must_use]
 pub struct ExecuteTxGuard(String);
 
 impl ExecuteTxGuard {
     pub fn new(pool_address: String) -> Option<Self> {
-        mutate_state( |s| {
-            if s.executing_pools.contains(&pool_address) {
-                return None::<ExecuteTxGuard>;
+        EXECUTING_POOLS.with(|executing_pools| {
+            if executing_pools.borrow().contains(&pool_address) {
+                return None;
             }
-
-            s.executing_pools.insert(pool_address.clone());
-            Some(ExecuteTxGuard(pool_address))
+            executing_pools.borrow_mut().insert(pool_address.clone());
+            return Some(ExecuteTxGuard(pool_address));
         })
     }
 }
 
 impl Drop for ExecuteTxGuard {
     fn drop(&mut self) {
-        mutate_state(|s| {
-            s.executing_pools.remove(&self.0);
+        EXECUTING_POOLS.with_borrow_mut(|executing_pools| {
+            executing_pools.remove(&self.0);
         });
     }
 }
