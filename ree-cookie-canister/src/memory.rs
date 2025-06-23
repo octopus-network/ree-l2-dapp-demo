@@ -7,7 +7,7 @@ use ic_stable_structures::{
 };
 use ree_types::{exchange_interfaces::NewBlockInfo, TxRecord, Txid};
 
-use crate::{game::gamer::Gamer, state::ExchangeState, Address};
+use crate::{game::{game::Game, gamer::Gamer}, state::ExchangeState, AddressStr};
 
 pub type Memory = VirtualMemory<DefaultMemoryImpl>;
 
@@ -29,13 +29,24 @@ thread_local! {
         ).expect("state memory not initialized")
     );
 
-    pub static GAMER: RefCell<StableBTreeMap<Address, Gamer, Memory>> = RefCell::new(
+    pub static GAMER: RefCell<StableBTreeMap<AddressStr, Gamer, Memory>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)),
         )
     );
 
-    pub static ADDRESS_PRINCIPLE_MAP: RefCell<StableBTreeMap<Principal, Address, Memory>> = RefCell::new(
+    pub static GAMES: RefCell<StableBTreeMap<AddressStr, Game, Memory>> = RefCell::new(
+        StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)),
+        )
+    );
+    // pub static GAMER: RefCell<StableBTreeMap<AddressStr, Gamer, Memory>> = RefCell::new(
+    //     StableBTreeMap::init(
+    //         MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)),
+    //     )
+    // );
+
+    pub static ADDRESS_PRINCIPLE_MAP: RefCell<StableBTreeMap<Principal, AddressStr, Memory>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(ADDRESS_PRINCIPAL_MAP_MEMORY_ID)),
         )
@@ -55,7 +66,7 @@ thread_local! {
 
 }
 
-pub fn init_gamer() -> StableBTreeMap<Address, Gamer, Memory> {
+pub fn init_gamer() -> StableBTreeMap<AddressStr, Gamer, Memory> {
     // StableBTreeMap::init(with_memory_manager(|m| m.get(GAMERS_MEMORY_ID)))
     StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)))
 }

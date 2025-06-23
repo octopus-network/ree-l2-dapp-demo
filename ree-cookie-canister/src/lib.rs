@@ -7,6 +7,7 @@ pub mod memory;
 pub mod reorg;
 pub mod state;
 pub mod utils;
+pub mod pool;
 
 pub use candid::{CandidType, Principal};
 pub use errors::*;
@@ -24,5 +25,5 @@ pub const ORCHESTRATOR_CANISTER: &'static str = "kqs64-paaaa-aaaar-qamza-cai";
 pub type Seconds = u64;
 pub type SecondTimestamp = u64;
 pub type PoolId = Pubkey;
-pub type Address = String;
+pub type AddressStr = String;
 pub const MIN_BTC_VALUE: u64 = 10000;

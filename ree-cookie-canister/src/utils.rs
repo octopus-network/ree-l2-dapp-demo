@@ -1,7 +1,7 @@
 use ic_cdk::api::management_canister::bitcoin::{BitcoinNetwork, Satoshi};
-use ree_types::bitcoin::key::{Secp256k1, TapTweak, TweakedPublicKey};
+use ree_types::bitcoin::{Address, key::{Secp256k1, TapTweak, TweakedPublicKey}, Network};
 
-use crate::{memory::read_state, *};
+use crate::{external::management::request_schnorr_key, memory::read_state, *};
 
 pub(crate) fn tweak_pubkey_with_empty(untweaked: Pubkey) -> TweakedPublicKey {
     let secp = Secp256k1::new();
@@ -56,6 +56,21 @@ pub fn get_max_recoverable_reorg_depth(network: BitcoinNetwork) -> u32 {
 
 pub fn calculate_premine_rune_amount() -> u128 {
     read_state(|s| s.game.claimed_cookies * 120 / 100)
+}
+
+pub async fn request_address(key_path: String)->Result<(Pubkey, TweakedPublicKey, Address)> {
+    let untweaked_pubkey = request_schnorr_key("key_1", key_path.into_bytes()).await?;
+    let tweaked_pubkey = tweak_pubkey_with_empty(untweaked_pubkey.clone());
+    cfg_if::cfg_if! {
+    if #[cfg(feature = "testnet")] {
+        let address = Address::p2tr_tweaked(tweaked_pubkey, Network::Testnet4);
+    } else {
+        let address = Address::p2tr_tweaked(tweaked_pubkey, Network::Bitcoin);
+    }
+    }
+
+    return Ok((untweaked_pubkey, tweaked_pubkey, address))
+
 }
 
 // pub(crate) fn detect_reorg(network: BitcoinNetwork, new_block: NewBlockInfo) -> Result<()> {

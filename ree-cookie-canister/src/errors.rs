@@ -64,13 +64,13 @@ pub enum ExchangeError {
     #[error("Game End")]
     GameEnd,
     #[error("Gamer Not Found, {0}")]
-    GamerNotFound(Address),
+    GamerNotFound(AddressStr),
     #[error("Gamer Withdraw Repeatedly, {0}")]
-    GamerWithdrawRepeatedly(Address),
+    GamerWithdrawRepeatedly(AddressStr),
     #[error("Gamer Already Exist, {0}")]
-    GamerAlreadyExist(Address),
+    GamerAlreadyExist(AddressStr),
     #[error("Gamer Cooling Down, {0} next claimable timestamp {1}")]
-    GamerCoolingDown(Address, SecondTimestamp),
+    GamerCoolingDown(AddressStr, SecondTimestamp),
     #[error("Unrecoverable error")]
     Unrecoverable,
     #[error("Duplicate block, height: {0}, hash: {1}")]
@@ -80,6 +80,12 @@ pub enum ExchangeError {
 
     #[error("Reorg error: {0}")]
     ReorgError(#[from] reorg::ReorgError),
+
+    #[error("Pool address mismatch, expected: {expected}, actual: {actual}")]
+    PoolAddressMismatch {
+        expected: AddressStr,
+        actual: AddressStr,
+    },
 
     #[error("{0}")]
     CustomError(String),

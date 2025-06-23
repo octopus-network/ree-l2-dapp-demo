@@ -4,9 +4,11 @@ use ic_stable_structures::Storable;
 use itertools::Itertools;
 use ree_types::{CoinBalance, CoinId, InputCoin, OutputCoin};
 use std::borrow::Cow;
+use std::collections::HashMap;
 
-use crate::game::game::Game;
+use crate::game::game::{Game, GameStatus};
 use crate::memory::{read_state, GAMER};
+use crate::pool::PoolManager;
 use crate::utils::calculate_premine_rune_amount;
 use crate::*;
 
@@ -19,53 +21,16 @@ pub struct ExchangeState {
     pub key: Option<Pubkey>,
     pub address: Option<String>,
     pub game: Game,
+    pub games: Vec<Game>,
     pub orchestrator: Principal,
     pub states: Vec<PoolState>,
     pub ii_canister: Principal,
     pub btc_customs_principle: Principal,
     pub etching_key: Option<String>,
     pub richswap_pool_address: String,
-    pub game_status: GameStatus,
+    pub pool_manager: PoolManager
 }
 
-#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
-pub enum GameStatus {
-    InitKey,
-    InitUtxo,
-    Play,
-    AddLiquidity,
-    Withdrawable,
-}
-
-impl GameStatus {
-    pub fn finish_init_key(&self) -> GameStatus {
-        match self {
-            GameStatus::InitKey => GameStatus::InitUtxo,
-            _ => panic!("GameStatus should be UnInit"),
-        }
-    }
-
-    pub fn finish_init_utxo(&self) -> GameStatus {
-        match self {
-            GameStatus::InitUtxo => GameStatus::Play,
-            _ => panic!("GameStatus should be InitKey"),
-        }
-    }
-
-    pub fn end(&self) -> GameStatus {
-        match self {
-            GameStatus::Play => GameStatus::AddLiquidity,
-            _ => panic!("GameStatus should be Play"),
-        }
-    }
-
-    pub fn finish_add_liquidity(&self) -> GameStatus {
-        match self {
-            GameStatus::AddLiquidity => GameStatus::Withdrawable,
-            _ => panic!("GameStatus should be RunesMinted"),
-        }
-    }
-}
 
 impl Storable for ExchangeState {
     fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
@@ -109,7 +74,6 @@ impl ExchangeState {
             btc_customs_principle,
             etching_key: None,
             richswap_pool_address,
-            game_status: GameStatus::InitKey,
         }
     }
 
@@ -130,12 +94,12 @@ impl ExchangeState {
         pool_utxo_receive: Vec<String>,
         input_coins: Vec<InputCoin>,
         output_coins: Vec<OutputCoin>,
-        initiator_address: Address,
+        initiator_address: AddressStr,
     ) -> Result<(PoolState, Utxo)> {
         assert!(
-            matches!(self.game_status, GameStatus::Withdrawable),
+            matches!(self.game.game_status, GameStatus::Withdrawable),
             "GameStatus should be Withdrawable, but got: {:?}",
-            self.game_status
+            self.game.game_status
         );
 
         let gamer = GAMER
@@ -216,12 +180,12 @@ impl ExchangeState {
         pool_utxo_receive: Vec<String>,
         input_coins: Vec<InputCoin>,
         output_coins: Vec<OutputCoin>,
-        _initiator_address: Address,
+        _initiator_address: AddressStr,
     ) -> Result<(PoolState, Utxo)> {
         assert!(
-            matches!(self.game_status, GameStatus::AddLiquidity),
+            matches!(self.game.game_status, GameStatus::AddLiquidity),
             "GameStatus should be RunesMinted, but got: {:?}",
-            self.game_status
+            self.game.game_status
         );
 
         self.game
@@ -324,7 +288,7 @@ impl ExchangeState {
         pool_utxo_receive: Vec<String>,
         input_coins: Vec<InputCoin>,
         output_coins: Vec<OutputCoin>,
-        address: Address,
+        address: AddressStr,
     ) -> Result<(PoolState, Utxo)> {
         if GAMER.with_borrow(|g| g.contains_key(&address)) {
             return Err(ExchangeError::GamerAlreadyExist(address.clone()));
@@ -478,8 +442,8 @@ impl PoolState {
 pub enum UserAction {
     Init,
     AddLiquidity,
-    Register(Address),
-    Withdraw(Address),
+    Register(AddressStr),
+    Withdraw(AddressStr),
 }
 
 #[test]

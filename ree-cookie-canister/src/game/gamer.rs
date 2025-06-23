@@ -13,6 +13,7 @@ pub struct Gamer {
     pub cookies: u128,
     pub last_click_time: SecondTimestamp,
     pub is_withdrawn: bool,
+    pub is_registered: bool,
 }
 
 impl Storable for Gamer {
@@ -34,6 +35,7 @@ impl Gamer {
             cookies: 0,
             last_click_time: 0,
             is_withdrawn: false,
+            is_registered: false,
         }
     }
 

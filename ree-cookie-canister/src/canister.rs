@@ -6,17 +6,12 @@ use crate::{
         bitcoin_customs::{etching_v3, EtchingArgs},
         internal_identity::get_principal,
         management::request_schnorr_key,
-    },
-    game::game::GameAndGamer,
-    log,
-    memory::{
+    }, game::game::{CreateGameArgs, GameAndGamer}, log, memory::{
         mutate_state, read_state, set_state, ADDRESS_PRINCIPLE_MAP, BLOCKS, GAMER, TX_RECORDS,
-    },
-    state::{ExchangeState, GameStatus, PoolState},
-    utils::{
-        calculate_premine_rune_amount, tweak_pubkey_with_empty, AddLiquidityInfo, RegisterInfo,
-    },
-    ExchangeError, Seconds, MIN_BTC_VALUE,
+    }, pool::Pool, state::{ExchangeState, PoolState}, utils::{
+        calculate_premine_rune_amount, request_address, tweak_pubkey_with_empty, AddLiquidityInfo,
+        RegisterInfo,
+    }, AddressStr, ExchangeError, Seconds, MIN_BTC_VALUE
 };
 use candid::Principal;
 use ic_cdk::{api::management_canister::bitcoin::Satoshi, init, post_upgrade, query, update};
@@ -57,6 +52,74 @@ fn init(
 }
 
 #[update]
+pub async fn create_game(create_game_args: CreateGameArgs) {
+
+}
+
+#[update]
+pub async fn new_pool_address() -> Result<String, ExchangeError> {
+    read_state(|e| e.pool_manager.clone())
+        .next_new_pool_address()
+        .await
+        .map(|e| e.to_string())
+}
+
+#[update]
+pub async fn rune_pool_address() -> Result<String, ExchangeError> {
+    read_state(|e| e.pool_manager.clone())
+        .next_new_pool_address()
+        .await
+        .map(|e| e.to_string())
+}
+
+#[update]
+pub async fn init_rune_pool(utxo: Utxo) -> Result<String, ExchangeError> {
+    let mut pool_manager = mutate_state(|s| s.pool_manager.clone());
+
+    let rune_path = pool_manager.get_rune_pool_path();
+    let (pubkey, _tweaked_pubkey, address) = request_address(rune_path.clone()).await?;
+    let rune_name = read_state(|s| s.rune_name.clone());
+    pool_manager.rune_pool = Some(Pool::init(
+        rune_name,
+        rune_path,
+        pubkey,
+        address.to_string(),
+        "".to_string(),
+        utxo,
+    ));
+    mutate_state(|es| es.pool_manager = pool_manager);
+    return Ok(address.to_string());
+}
+
+#[update]
+pub async fn init_new_btc_pool(
+    pool_address: AddressStr,
+    utxo: Utxo,
+) -> Result<String, ExchangeError> {
+    let mut pool_manager = mutate_state(|s| s.pool_manager.clone());
+    // let (pubkey, _tweaked_pubkey, address) = request_address(pool_address.clone()).await?;
+    let (pubkey, _tweaked_pubkey, address) = pool_manager.next_new_pool_address().await?;
+    if pool_address.ne(&address.to_string()) {
+        return Err(ExchangeError::PoolAddressMismatch {
+            expected: pool_address,
+            actual: address.to_string(),
+        });
+    }
+    pool_manager.pools.insert(
+        pool_address,
+        Pool::init(
+            pool_name,
+            pool_address.clone(),
+            pubkey,
+            address.to_string(),
+            "".to_string(),
+            utxo,
+        ),
+    );
+    mutate_state(|es| es.pool_manager = pool_manager);
+}
+
+#[update]
 pub async fn init_key() -> Result<String, ExchangeError> {
     let (current_address, key_name) = read_state(|s| (s.address.clone(), s.key_path.clone()));
     if let Some(address) = current_address {
@@ -74,7 +137,7 @@ pub async fn init_key() -> Result<String, ExchangeError> {
         mutate_state(|es| {
             es.key = Some(untweaked_pubkey.clone());
             es.address = Some(address.to_string());
-            es.game_status = es.game_status.finish_init_key();
+            es.game.game_status = es.game.game_status.finish_init_key();
         });
         Ok(address.to_string())
     }
@@ -91,7 +154,7 @@ pub async fn init_utxo(utxo: Utxo) -> Result<(), ExchangeError> {
             user_action: crate::state::UserAction::Init,
         });
 
-        es.game_status = es.game_status.finish_init_utxo();
+        es.game.game_status = es.game.game_status.finish_init_utxo();
     });
 
     Ok(())
@@ -146,7 +209,7 @@ pub fn claim() -> Result<u128, ExchangeError> {
 async fn end_game() {
     mutate_state(|s| {
         s.game.is_end = true;
-        s.game_status = s.game_status.end();
+        s.game.game_status = s.game.game_status.end();
     });
 }
 
@@ -232,7 +295,7 @@ pub fn get_pool_info(args: GetPoolInfoArgs) -> GetPoolInfoResponse {
 }
 
 #[query]
-pub fn get_game_and_gamer_infos(gamer_id: crate::Address) -> GameAndGamer {
+pub fn get_game_and_gamer_infos(gamer_id: crate::AddressStr) -> GameAndGamer {
     read_state(|s| GameAndGamer {
         is_end: s.game.is_end,
         gamer_register_fee: s.game.gamer_register_fee,
@@ -371,7 +434,7 @@ pub async fn execute_tx(args: ExecuteTxArgs) -> ExecuteTxResponse {
 
             mutate_state(|s| {
                 s.game.add_liquidity();
-                s.game_status = s.game_status.finish_add_liquidity();
+                s.game.game_status = s.game.game_status.finish_add_liquidity();
                 s.commit(new_state);
             });
         }
