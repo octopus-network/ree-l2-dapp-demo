@@ -1,4 +1,5 @@
 pub(crate) use std::cell::RefCell;
+use std::collections::HashSet;
 
 use candid::Principal;
 use ic_stable_structures::{
@@ -52,6 +53,8 @@ thread_local! {
             MEMORY_MANAGER.with(|m| m.borrow().get(TX_RECORDS_MEMORY_ID)),
         )
     );
+ 
+    pub static EXECUTING_POOLS: RefCell<HashSet<String>> = RefCell::new(HashSet::new()); 
 
 }
 

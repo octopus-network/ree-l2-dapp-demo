@@ -1,7 +1,6 @@
 use ic_cdk::api::management_canister::bitcoin::Satoshi;
 use ic_stable_structures::storable::Bound;
 use ic_stable_structures::Storable;
-use itertools::Itertools;
 use ree_types::{CoinBalance, CoinId, InputCoin, OutputCoin};
 use std::borrow::Cow;
 

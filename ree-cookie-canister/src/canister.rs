@@ -12,9 +12,9 @@ use crate::{
     memory::{
         mutate_state, read_state, set_state, ADDRESS_PRINCIPLE_MAP, BLOCKS, GAMER, TX_RECORDS,
     },
-    state::{ExchangeState, GameStatus, PoolState},
+    state::{ExchangeState, PoolState},
     utils::{
-        calculate_premine_rune_amount, tweak_pubkey_with_empty, AddLiquidityInfo, RegisterInfo,
+        calculate_premine_rune_amount, tweak_pubkey_with_empty, AddLiquidityInfo, ExecuteTxGuard, RegisterInfo
     },
     ExchangeError, Seconds, MIN_BTC_VALUE,
 };
@@ -290,6 +290,9 @@ pub async fn execute_tx(args: ExecuteTxArgs) -> ExecuteTxResponse {
         input_coins,
         output_coins,
     } = intention;
+
+    let _guard = ExecuteTxGuard::new(pool_address.clone())
+    .ok_or(format!("Pool {0} Executing", pool_address).to_string())?;
 
     read_state(|s| {
         return s
