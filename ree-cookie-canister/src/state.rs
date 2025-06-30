@@ -6,7 +6,7 @@ use ree_types::{CoinBalance, CoinId, InputCoin, OutputCoin};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use crate::game::game::{Game, GameStatus};
+use crate::game::game::{CreateGameArgs, Game, GameStatus};
 use crate::memory::{read_state, GAMER};
 use crate::pool::PoolManager;
 use crate::utils::calculate_premine_rune_amount;
@@ -14,21 +14,21 @@ use crate::*;
 
 #[derive(Deserialize, Serialize, Clone, CandidType)]
 pub struct ExchangeState {
-    pub key_path: String,
-    pub rune_name: String,
-    pub rune_id: Option<CoinId>,
+    // pub key_path: String,
+    // pub rune_name: String,
+    // pub rune_id: Option<CoinId>,
     // pub symbol: String,
-    pub key: Option<Pubkey>,
-    pub address: Option<String>,
-    pub game: Game,
-    pub games: Vec<Game>,
+    // pub key: Option<Pubkey>,
+    // pub address: Option<String>,
+    // pub game: Game,
+    pub games: HashMap<RuneId, Game>,
     pub orchestrator: Principal,
     pub states: Vec<PoolState>,
     pub ii_canister: Principal,
     pub btc_customs_principle: Principal,
     pub etching_key: Option<String>,
     pub richswap_pool_address: String,
-    pub pool_manager: PoolManager
+    // pub pool_manager: PoolManager
 }
 
 
@@ -46,28 +46,13 @@ impl Storable for ExchangeState {
 
 impl ExchangeState {
     pub fn init(
-        key_path: String,
-        rune_name: String,
-        gamer_register_fee: Satoshi,
-        claim_cooling_down: Seconds,
-        cookie_amount_per_claim: u128,
         orchestrator: Principal,
         ii_canister: Principal,
         btc_customs_principle: Principal,
         richswap_pool_address: String,
     ) -> Self {
         Self {
-            key_path,
-            rune_id: Option::None,
-            // symbol,
-            rune_name,
-            key: None,
-            address: None,
-            game: Game::init(
-                gamer_register_fee,
-                claim_cooling_down,
-                cookie_amount_per_claim,
-            ),
+            games: HashMap::new(),
             orchestrator,
             states: vec![],
             ii_canister,

@@ -6,7 +6,7 @@ use crate::{
         bitcoin_customs::{etching_v3, EtchingArgs},
         internal_identity::get_principal,
         management::request_schnorr_key,
-    }, game::game::{CreateGameArgs, GameAndGamer}, log, memory::{
+    }, game::game::{CreateGameArgs, Game, GameAndGamer, RuneInfo}, log, memory::{
         mutate_state, read_state, set_state, ADDRESS_PRINCIPLE_MAP, BLOCKS, GAMER, TX_RECORDS,
     }, pool::Pool, state::{ExchangeState, PoolState}, utils::{
         calculate_premine_rune_amount, request_address, tweak_pubkey_with_empty, AddLiquidityInfo,
@@ -28,22 +28,12 @@ use ree_types::{
 
 #[init]
 fn init(
-    key_path: String,
-    rune_name: String,
-    gamer_register_fee: Satoshi,
-    claim_cooling_down: Seconds,
-    cookie_amount_per_claim: u128,
     orchestrator: Principal,
     ii_canister: Principal,
     btc_customs_principle: Principal,
     richswap_pool_address: String,
 ) {
     set_state(ExchangeState::init(
-        key_path,
-        rune_name,
-        gamer_register_fee,
-        claim_cooling_down,
-        cookie_amount_per_claim,
         orchestrator,
         ii_canister,
         btc_customs_principle,
@@ -52,25 +42,43 @@ fn init(
 }
 
 #[update]
-pub async fn create_game(create_game_args: CreateGameArgs) {
+pub async fn create_game(
+    create_game_args: CreateGameArgs,
+    creator_address: AddressStr,
+    rune_info: RuneInfo,
+)->Result<(), String>{
+
+    let principle = get_principal(creator_address.to_string())
+    .await?;
+
+    assert_eq!(ic_cdk::caller(), principle);
+    mutate_state(|s| {
+        s.games.insert(rune_info.rune_id, Game::new(create_game_args, creator_address));
+    });
+
+    Ok(())
 
 }
 
-#[update]
-pub async fn new_pool_address() -> Result<String, ExchangeError> {
-    read_state(|e| e.pool_manager.clone())
-        .next_new_pool_address()
-        .await
-        .map(|e| e.to_string())
+pub async fn init_game() {
+
 }
 
-#[update]
-pub async fn rune_pool_address() -> Result<String, ExchangeError> {
-    read_state(|e| e.pool_manager.clone())
-        .next_new_pool_address()
-        .await
-        .map(|e| e.to_string())
-}
+// #[update]
+// pub async fn new_pool_address() -> Result<String, ExchangeError> {
+//     read_state(|e| e.pool_manager.clone())
+//         .next_new_pool_address()
+//         .await
+//         .map(|e| e.2.to_string())
+// }
+
+// #[update]
+// pub async fn rune_pool_address() -> Result<String, ExchangeError> {
+//     read_state(|e| e.pool_manager.clone())
+//         .next_new_pool_address()
+//         .await
+//         .map(|e| e.2.to_string())
+// }
 
 #[update]
 pub async fn init_rune_pool(utxo: Utxo) -> Result<String, ExchangeError> {
@@ -117,6 +125,8 @@ pub async fn init_new_btc_pool(
         ),
     );
     mutate_state(|es| es.pool_manager = pool_manager);
+
+    todo!()
 }
 
 #[update]
@@ -391,12 +401,7 @@ pub async fn execute_tx(args: ExecuteTxArgs) -> ExecuteTxResponse {
             .await
             .map_err(|e| e.to_string())?;
 
-            let principal_byte_buf = get_principal(initiator.clone())
-                .await
-                .map_err(|e| format!("get_principal failed: {:?}, initiator: {:?}", e, initiator))?
-                .0?;
-
-            let principal_of_initiator = Principal::from_slice(&principal_byte_buf);
+            let principal_of_initiator = get_principal(initiator.clone()).await?;
 
             mutate_state(|s| {
                 s.game.register_new_gamer(initiator.clone());

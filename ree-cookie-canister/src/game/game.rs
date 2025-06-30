@@ -22,14 +22,14 @@ pub struct Game {
     pub game_status: GameStatus,
     pub creator: AddressStr,
     pub pool_manager: PoolManager,
-    pub rune_info: Option<RuneInfo>,
+    pub rune_info: RuneInfo,
     pub claimed_cookies: u128,
 }
 
 #[derive(CandidType, Deserialize, Serialize, Clone)]
 pub struct RuneInfo {
     pub rune_id: String,
-    pub rune_name: String,
+    pub rune_name: RuneName,
     pub rune_premine_amount: u128,
 } 
 
@@ -50,6 +50,7 @@ impl Game {
     pub fn new(
         args: CreateGameArgs,
         creator: AddressStr,
+        rune_info: RuneInfo,
     )-> Self {
         Self {
             game_name: args.game_name.clone(),
@@ -59,7 +60,7 @@ impl Game {
             game_status: GameStatus::Etching,
             creator,
             pool_manager: PoolManager::new(args.game_name),
-            rune_info: Option::None ,
+            rune_info: rune_info,
             claimed_cookies: 0,
         }
     }
@@ -213,8 +214,8 @@ impl GameStatus {
 
 #[derive(CandidType, Deserialize, Serialize, Clone)]
 pub struct CreateGameArgs {
-    game_name: String,
-    gamer_register_fee: Satoshi,
-    claim_cooling_down: Seconds,
-    cookie_amount_per_claim: u128,
+    pub game_name: String,
+    pub gamer_register_fee: Satoshi,
+    pub claim_cooling_down: Seconds,
+    pub cookie_amount_per_claim: u128,
 }

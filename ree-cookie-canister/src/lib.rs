@@ -26,4 +26,6 @@ pub type Seconds = u64;
 pub type SecondTimestamp = u64;
 pub type PoolId = Pubkey;
 pub type AddressStr = String;
+pub type RuneName = String;
+pub type RuneId = String;
 pub const MIN_BTC_VALUE: u64 = 10000;

@@ -51,20 +51,6 @@ impl Pool {
 }
 
 impl TryFrom<Pool> for PoolInfo {
-    // fn from(pool: Pool) -> Self {
-    //     let last_state = pool.states.last().cloned();
-    //     PoolInfo {
-    //         key: pool.pubkey,
-    //         key_derivation_path: vec![pool.key_path.into_bytes()],
-    //         name: pool.name,
-    //         address: pool.addr,
-    //         nonce: pool.nonce,
-    //         coin_reserved: vec![],
-    //         btc_reserved: 0,
-    //         utxos: vec![],
-    //         attributes: String::new(),
-    //     }
-    // }
 
     type Error = ExchangeError;
     fn try_from(pool: Pool) -> std::result::Result<Self, ExchangeError> {
@@ -122,7 +108,6 @@ pub struct PoolManager {
 
 impl PoolManager {
     pub const MAX_PENDING_TRANSACTION_COUNTS: usize = 25;
-    // pub const POOL_PATH: &'static str = "ree_cookie_pool";
 
     pub fn new(path_prefix: String)->Self{
         PoolManager { 
