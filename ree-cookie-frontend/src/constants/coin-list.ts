@@ -18,11 +18,3 @@ export const RICH: Coin = {
   number: 431,
 };
 
-export const UNKNOWN_COIN: Coin = {
-  id: "UNKNOWN",
-  symbol: "UNKNOWN",
-  name: "UNKNOWN",
-  decimals: 8,
-};
-
-export const COIN_LIST: Coin[] = [BITCOIN];

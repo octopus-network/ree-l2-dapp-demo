@@ -1,7 +1,7 @@
 import { AddressType, ToSignInput, TxOutputType, UnspentOutput } from "../../types";
 import { Transaction } from "../transaction";
 import { addressTypeToString, getAddressType } from "../address";
-import { Edict, RuneId, Runestone, none } from "../runelib";
+import { Edict, RuneId, Runestone, none } from "runelib";
 import { COOKIE_EXCHANGE_ID, UTXO_DUST } from "../../constants";
 import { ocActor } from "../../canister/orchestrator/actor";
 import * as bitcoin from "bitcoinjs-lib";
@@ -151,13 +151,13 @@ export async function withdrawTx({
     const unsignedTxClone = unsignedTx.clone();
 
     for (let i = 0; i < toSignInputs.length; i++) {
-        const toSignInput = toSignInputs[i];
+        const toSignInput = toSignInputs[i]!;
 
         const toSignIndex = toSignInput.index;
         const input = inputs[toSignIndex];
-        const inputAddress = input.utxo.address;
+        const inputAddress = input!.utxo.address;
         if (!inputAddress) continue;
-        const redeemScript = psbt.data.inputs[toSignIndex].redeemScript;
+        const redeemScript = psbt.data.inputs[toSignIndex]!.redeemScript;
         const addressType = getAddressType(inputAddress);
 
         if (redeemScript && addressType === AddressType.P2SH_P2WPKH) {
@@ -180,12 +180,8 @@ export async function withdrawTx({
                     action: "withdraw",
                     exchange_id: COOKIE_EXCHANGE_ID,
                     input_coins: [],
-                    pool_utxo_spend: [
-                        `${cookiePoolBtcUtxo.txid}:${cookiePoolBtcUtxo.vout}`
-                    ],
-                    pool_utxo_receive: [
-                        `${txid}:0`,
-                    ],
+                    pool_utxo_spent: [],
+                    pool_utxo_received: [],
                     output_coins: [
                         {
                             to: paymentAddress,
@@ -201,6 +197,7 @@ export async function withdrawTx({
                 }],
         },
         psbt_hex: signedPsbtHex,
+        initiator_utxo_proof: [],
     }).then((res) => {
         if ('Err' in res) {
             throw new Error(res.Err);

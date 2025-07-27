@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Button, Modal, Spin, Typography } from 'antd';
 import { useSiwbIdentity } from 'ic-siwb-lasereyes-connector';
-import { UNISAT, useLaserEyes, WIZZ, XVERSE } from '@omnisat/lasereyes';
+import { ContentType, NetworkType, ProviderType, UNISAT, useLaserEyes, WIZZ, XVERSE } from '@omnisat/lasereyes';
+import { atom, useAtom } from 'jotai';
 
-export default function ConnectDialog({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) {
+export const connectWalletModalOpenAtom = atom(false);
+
+export default function ConnectWalletModal() {
+  const [connectWalletModalOpen, setConnectWalletModalOpen] = useAtom(
+    connectWalletModalOpenAtom
+  );
   const p = useLaserEyes();
+
+  const {
+    address,
+  } = p;
 
   const {
     prepareLogin,
@@ -17,8 +27,8 @@ export default function ConnectDialog({ isOpen, setIsOpen }: { isOpen: boolean; 
     getPublicKey,
     connectedBtcAddress,
     identity,
+    identityAddress,
     identityPublicKey,
-    clear
   } = useSiwbIdentity();
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -27,9 +37,7 @@ export default function ConnectDialog({ isOpen, setIsOpen }: { isOpen: boolean; 
    * Preload a Siwb message on every address change.
    */
   useEffect(() => {
-    console.log({isPrepareLoginIdle});
     if (!isPrepareLoginIdle) return;
-    console.log('after check prepareLoginIdle');
     const address = getAddress();
     const pubkey = getPublicKey();
     console.log({ address, pubkey, identityPublicKey, connectedBtcAddress });
@@ -39,9 +47,14 @@ export default function ConnectDialog({ isOpen, setIsOpen }: { isOpen: boolean; 
         address,
         // canisterId: process.env.
       });
-      console.log('before prepareLogin');
+
       prepareLogin();
-      console.log('after prepareLogin');
+      console.log('prepareLogin called');
+      console.log({
+        connectedBtcAddress,
+        identity,
+        manually
+      })
       if (connectedBtcAddress && !identity && manually) {
         (async () => {
           setLoading(true);
@@ -50,12 +63,12 @@ export default function ConnectDialog({ isOpen, setIsOpen }: { isOpen: boolean; 
           setLoading(false);
           if (res) {
             setManually(false);
-            setIsOpen(false);
+            setConnectWalletModalOpen(false);
           }
         })();
       }
     }
-  }, [prepareLogin, isPrepareLoginIdle, getAddress, setIsOpen, login, connectedBtcAddress, identity, manually]);
+  }, [address, prepareLogin, isPrepareLoginIdle, getAddress, login, connectedBtcAddress, identity, manually]);
 
   /**
    * Show an error toast if the prepareLogin() call fails.
@@ -70,14 +83,14 @@ export default function ConnectDialog({ isOpen, setIsOpen }: { isOpen: boolean; 
   return (
     <Modal
       className="z-50 w-80"
-      open={isOpen}
+      open={connectWalletModalOpen}
       footer={null}
       onCancel={() => {
-        setIsOpen(false);
+        setConnectWalletModalOpen(false);
       }}
     >
       <Typography.Title> Select Wallet</Typography.Title>
-      <div className="mt-8">
+      {/* <div className="mt-8">
         <Button
           key="wizz"
           onClick={async () => {
@@ -89,7 +102,7 @@ export default function ConnectDialog({ isOpen, setIsOpen }: { isOpen: boolean; 
         >
           Wizz Wallet
         </Button>
-      </div>
+      </div> */}
       <div className="mt-8">
         <Button
           key="unisat"
@@ -102,7 +115,7 @@ export default function ConnectDialog({ isOpen, setIsOpen }: { isOpen: boolean; 
         >
           Unisat Wallet
         </Button>
-        <Button
+        {/* <Button
           key="xverse"
           onClick={async () => {
             setManually(true);
@@ -112,7 +125,7 @@ export default function ConnectDialog({ isOpen, setIsOpen }: { isOpen: boolean; 
           block
         >
           Xverse Wallet
-        </Button>
+        </Button> */}
       </div>
       {loading && <Spin fullscreen />}
     </Modal>

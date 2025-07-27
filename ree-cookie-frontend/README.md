@@ -1,54 +1,40 @@
-# React + TypeScript + Vite
+# Vitamin 2.0
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Test workflow](https://github.com/wtchnm/Vitamin/actions/workflows/test.yml/badge.svg) [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/wtchnm/Vitamin/blob/main/LICENSE)
 
-Currently, two official plugins are available:
+Opinionated Vite starter template. Previous version available on v1 branch.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- [Vite 6](https://vitejs.dev) with [React 19](https://reactjs.org), [TypeScript 5](https://www.typescriptlang.org) and [absolute imports](https://github.com/aleclarson/vite-tsconfig-paths).
+- [Tailwind CSS v4](https://tailwindcss.com) for easy stylization.
+- [Biome V2](https://next.biomejs.dev) for linting, formatting and automatic import sorting.
+- Write unit and integration tests with [Vitest 3](https://vitest.dev/) and [Testing Library 16](https://testing-library.com/).
+- Write e2e tests with [Playwright 1.52](https://www.cypress.io).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting started
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+Use this repository as a [GitHub template](https://github.com/wtchnm/Vitamin/generate) or use [degit](https://github.com/Rich-Harris/degit) to clone to your machine with an empty git history:
+
+```
+npx degit wtchnm/Vitamin#main my-app
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then, install the dependencies:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
 ```
+pnpm install
+```
+
+## Scripts
+
+- `pnpm dev` - start a development server with hot reload.
+- `pnpm build` - build for production. The generated files will be on the `dist` folder.
+- `pnpm preview` - locally preview the production build.
+- `pnpm test` - run unit and integration tests related to changed files based on git.
+- `pnpm test:ci` - run all unit and integration tests in CI mode.
+- `pnpm test:e2e` - run all e2e tests with Playwright.
+- `pnpm test:e2e:ci` - run all e2e tests headlessly.
+- `pnpm format` - format all files with Biome Formatter.
+- `pnpm lint` - runs TypeScript and Biome.
+- `pnpm validate` - runs `lint`, `test:ci` and `test:e2e:ci`.

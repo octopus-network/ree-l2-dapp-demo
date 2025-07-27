@@ -4,38 +4,45 @@ import { addressTypeToString, getAddressType } from "../address";
 import { ocActor } from "../../canister/orchestrator/actor";
 import { BITCOIN, COOKIE_EXCHANGE_ID, RICHSWAP_EXCHANGE_ID, UTXO_DUST } from "../../constants";
 import * as bitcoin from "bitcoinjs-lib";
-import { Edict, RuneId, Runestone, none } from "../../utils/runelib";
+// import { Edict, RuneId, Runestone, none } from "../../utils/runelib";
 import { InvokeArgs } from "../../canister/orchestrator/service.did";
+import { Edict, RuneId, Runestone, none  } from "runelib";
 
 
 export async function addLiquidityTx({
     userBtcUtxos,
     btcAmountForAddLiquidity,
     runeid,
+    gameid,
     runeAmountForAddLiquidity,
     cookiePoolBtcUtxo,
-    // cookiePoolRuneUtxo,
+    cookiePoolRuneUtxo,
     paymentAddress,
     swapPoolAddress,
-    cookiePoolAddress,
+    cookieBtcPoolAddress,
+    cookieRunePoolAddress,
     feeRate,
     signPsbt,
-    cookiePoolNonce,
+    cookieBtcPoolNonce,
+    cookieRunePoolNonce,
     swapPoolNonce,
 }: {
     userBtcUtxos: UnspentOutput[],
     btcAmountForAddLiquidity: bigint;
     runeid: string;
+    gameid: number;
     runeAmountForAddLiquidity: bigint;
     cookiePoolBtcUtxo: UnspentOutput;
-    // cookiePoolRuneUtxo: UnspentOutput;
+    cookiePoolRuneUtxo: UnspentOutput;
     paymentAddress: string;
     swapPoolAddress: string;
     // swapPoolUtxo: UnspentOutput;
-    cookiePoolAddress: string;
+    cookieBtcPoolAddress: string;
+    cookieRunePoolAddress: string;
     feeRate: number;
     signPsbt: any;
-    cookiePoolNonce: bigint;
+    cookieBtcPoolNonce: bigint;
+    cookieRunePoolNonce: bigint;
     swapPoolNonce: bigint;
 }) {
 
@@ -52,12 +59,19 @@ export async function addLiquidityTx({
     let inputTypes: TxOutputType[] = []
     let outputTypes: TxOutputType[] = []
 
-    // input 0 pool utxo 
+    // input 0 pool btc utxo 
     tx.addInput(cookiePoolBtcUtxo)
     inputTypes.push(
         addressTypeToString(getAddressType(cookiePoolBtcUtxo.address))
     )
 
+    // input 1 pool btc utxo 
+    tx.addInput(cookiePoolRuneUtxo)
+    inputTypes.push(
+        addressTypeToString(getAddressType(cookiePoolRuneUtxo.address))
+    )
+
+    // input 2-n user utxo
     console.log({userBtcUtxos})
     userBtcUtxos.forEach(utxo => {
         tx.addInput(utxo)
@@ -68,15 +82,22 @@ export async function addLiquidityTx({
 
     // output
 
-    // cookie pool
+    // cookie btc pool
     // output 0
-    tx.addOutput(cookiePoolAddress, BigInt(cookiePoolBtcUtxo.satoshis) - btcAmountForAddLiquidity)
+    tx.addOutput(cookieBtcPoolAddress, BigInt(cookiePoolBtcUtxo.satoshis) - btcAmountForAddLiquidity)
     outputTypes.push(
-        addressTypeToString(getAddressType(cookiePoolAddress))
+        addressTypeToString(getAddressType(cookieBtcPoolAddress))
+    )
+
+    // cookie rune pool
+    // output 1
+    tx.addOutput(cookieRunePoolAddress, cookiePoolRuneUtxo.satoshis)
+    outputTypes.push(
+        addressTypeToString(getAddressType(cookieRunePoolAddress))
     )
 
     // swap pool
-    // output 1
+    // output 2
     tx.addOutput(swapPoolAddress, btcAmountForAddLiquidity)
     outputTypes.push(
         addressTypeToString(getAddressType(swapPoolAddress))
@@ -84,17 +105,17 @@ export async function addLiquidityTx({
 
     // edict & op return
     const [runeBlock, runeIdx] = runeid.split(":");
-    const { id: cookieRuneId, amount: cookiePoolRuneAmount } = cookiePoolBtcUtxo.runes.find(rune => rune.id === runeid)!;
+    const { id: cookieRuneId, amount: cookiePoolRuneAmount } = cookiePoolRuneUtxo.runes.find(rune => rune.id === runeid)!;
     const edicts = [
         new Edict(
             new RuneId(Number(runeBlock), Number(runeIdx)),
             BigInt(cookiePoolRuneAmount) - runeAmountForAddLiquidity,
-            0
+            1
         ),
         new Edict(
             new RuneId(Number(runeBlock), Number(runeIdx)),
             BigInt(runeAmountForAddLiquidity),
-            1
+            2
         )
     ]
 
@@ -114,7 +135,7 @@ export async function addLiquidityTx({
 
     let fee = await ocActor.estimate_min_tx_fee({
         'input_types': inputTypes,
-        'pool_address': [swapPoolAddress, cookiePoolAddress],
+        'pool_address': [swapPoolAddress, cookieBtcPoolAddress, cookieRunePoolAddress],
         'output_types': outputTypes,
     }).then((res: { 'Ok': bigint } | { 'Err': string }) => {
         if ('Err' in res) {
@@ -163,13 +184,13 @@ export async function addLiquidityTx({
     const unsignedTxClone = unsignedTx.clone();
 
     for (let i = 0; i < toSignInputs.length; i++) {
-        const toSignInput = toSignInputs[i];
+        const toSignInput = toSignInputs[i]!;
 
-        const toSignIndex = toSignInput.index;
-        const input = inputs[toSignIndex];
+        const toSignIndex = toSignInput!.index;
+        const input = inputs[toSignIndex]!;
         const inputAddress = input.utxo.address;
         if (!inputAddress) continue;
-        const redeemScript = psbt.data.inputs[toSignIndex].redeemScript;
+        const redeemScript = psbt.data.inputs[toSignIndex]!.redeemScript;
         const addressType = getAddressType(inputAddress);
 
         if (redeemScript && addressType === AddressType.P2SH_P2WPKH) {
@@ -186,20 +207,17 @@ export async function addLiquidityTx({
 
 
     let invoke_arg: InvokeArgs  = {
+        'initiator_utxo_proof': [],
         'intention_set': {
             tx_fee_in_sats: BigInt(fee),
             initiator_address: paymentAddress,
             intentions: [
                 {
-                    action: "add_liquidity",
+                    action: "add_liquidity_btc",
                     exchange_id: COOKIE_EXCHANGE_ID,
                     input_coins: [],
-                    pool_utxo_spend: [
-                        `${cookiePoolBtcUtxo.txid}:${cookiePoolBtcUtxo.vout}`,
-                    ],
-                    pool_utxo_receive: [
-                        `${txid}:0`,
-                    ],
+                    pool_utxo_spent: [],
+                    pool_utxo_received: [],
                     output_coins: [
                         {
                             to: swapPoolAddress,
@@ -208,6 +226,20 @@ export async function addLiquidityTx({
                                 value: BigInt(btcAmountForAddLiquidity),
                             }
                         }, 
+                    ],
+                    pool_address: cookieBtcPoolAddress,
+                    action_params: JSON.stringify({
+                        game_id: gameid
+                    }),
+                    nonce: cookieBtcPoolNonce,
+                },
+                 {
+                    action: "add_liquidity_rune",
+                    exchange_id: COOKIE_EXCHANGE_ID,
+                    input_coins: [],
+                    pool_utxo_spent: [],
+                    pool_utxo_received: [],
+                    output_coins: [
                         {
                             to: swapPoolAddress,
                             coin: {
@@ -216,33 +248,33 @@ export async function addLiquidityTx({
                             }
                         }
                     ],
-                    pool_address: cookiePoolAddress,
-                    action_params: "",
-                    nonce: cookiePoolNonce,
+                    pool_address: cookieRunePoolAddress,
+                    action_params: JSON.stringify({
+                        game_id: gameid
+                    }),
+                    nonce: cookieRunePoolNonce,
                 },
                 {
                     action: "add_liquidity",
                     exchange_id: RICHSWAP_EXCHANGE_ID,
                     input_coins: [
                         {
-                            from: cookiePoolAddress,
+                            from: cookieBtcPoolAddress,
                             coin: {
                                 id: BITCOIN.id,
                                 value: btcAmountForAddLiquidity,
                             }
                         },
                         {
-                            from: cookiePoolAddress,
+                            from: cookieBtcPoolAddress,
                             coin: {
                                 id: runeid,
                                 value: runeAmountForAddLiquidity,
                             }
                         }
                     ],
-                    pool_utxo_spend: [],
-                    pool_utxo_receive: [
-                        `${txid}:1`,
-                    ],
+                    pool_utxo_spent: [],
+                    pool_utxo_received: [],
                     output_coins: [],
                     pool_address: swapPoolAddress,
                     action_params: "",
@@ -260,16 +292,17 @@ export async function addLiquidityTx({
             throw new Error(res.Err);
         }
         console.log("invoke success and txid ", res.Ok);
+        alert("Add Liquidity Success: " + res.Ok);
+        // reload page
+        window.location.reload();
         return res.Ok;
     }).catch((err) => {
         console.log("invoke error", err);
+        alert("Add Liquidity Failed: " + err);
+        // reload page
+        window.location.reload();
         throw err;
     })
-
-
-
-
-
 
 }
 

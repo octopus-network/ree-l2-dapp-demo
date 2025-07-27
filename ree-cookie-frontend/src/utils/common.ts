@@ -1,19 +1,18 @@
-// import { clsx, type ClassValue } from "clsx";
-// import { twMerge } from "tailwind-merge";
+import { clsx, type ClassValue } from "clsx";
 import * as bitcoin from "bitcoinjs-lib";
-import { BITCOIN, UNKNOWN_COIN, NETWORK } from "../constants";
+import { BITCOIN, NETWORK } from "../constants";
 import * as ecc from "@bitcoinerlab/secp256k1";
 import { AddressType, Coin, UnspentOutput } from "../types";
-import axios from "axios";
 import Decimal from "decimal.js";
 import { toPsbtNetwork } from "./network";
 import { Utxo } from "../canister/cookie/service.did";
+import { twMerge } from 'tailwind-merge'
 
 bitcoin.initEccLib(ecc);
 
-// export function cn(...inputs: ClassValue[]) {
-//   return twMerge(clsx(inputs));
-// }
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 export function ellipseMiddle(
   target: string | null,
@@ -32,11 +31,10 @@ export function bytesToHex(bytes: Uint8Array) {
   const hexes = Array.from({ length: 256 }, (_, i) =>
     i.toString(16).padStart(2, "0")
   );
-  // pre-caching improves the speed 6x
   let hex = "";
-  for (let i = 0; i < bytes.length; i++) {
-    hex += hexes[bytes[i]];
-  }
+  for (const byte of bytes) {
+		hex += hexes[byte]
+	}
   return hex;
 }
 
@@ -79,14 +77,6 @@ export function getRunePriceInSats(btcAmount: string, runeAmount: string) {
     : undefined;
 }
 
-export async function fetchCoinById(coinId: string): Promise<Coin> {
-  const queryRes = await axios
-    .get(`/api/runes/search?keyword=${coinId}`)
-    .then((res) => res.data.data ?? []);
-
-  return queryRes.length ? queryRes[0] : UNKNOWN_COIN;
-}
-
 export function isNumber(value: string) {
   const reg = /^[0-9]+\.?[0-9]*$/;
   return reg.test(value);
@@ -106,11 +96,11 @@ export function convertUtxo(utxo: Utxo, untweaked_key: string ): UnspentOutput {
     //   id: utxo.maybe_rune;
     //   amount: string;
     // }[];
-    runes: utxo.maybe_rune.map((rune) => {
-      return {
-        id: rune.id,
-        amount: rune.value.toString(),
-      };
-    })
+    runes: utxo.coins
+		.filter(e=>e.id!==BITCOIN.id)
+		.map(rune => ({
+			id: rune.id,
+			amount: rune.value.toString()
+		}))
   }
 }

@@ -3,13 +3,25 @@
 import { useMemo } from "react";
 
 import { useAtomValue } from "jotai";
-import { spentUtxosAtom } from "../store/spent-utxos";
+import { atomWithStorage } from "jotai/utils";
+// import { spentUtxosAtom } from "../store/spent-utxos";
 import axios from "axios";
 
 import useSWR from "swr";
 import { useLaserEyes } from "@omnisat/lasereyes";
 import { atom, useAtom } from "jotai";
 import { UnspentOutput } from "../types";
+import { useQuery } from "@tanstack/react-query";
+import { GetUtxoData, getUtxoData, UnisatApiResponse, UnisatUtxo } from "api/unisat";
+import { ocActor } from "canister/orchestrator/actor";
+import { getAddressUtxo, MempoolUtxo } from "api/mempool";
+import { OrchestratorStatus } from "canister/orchestrator/service.did";
+import { getUserRuneUtxosFromMaestro, MaestroUtxo } from "api/maestro";
+
+export const spentUtxosAtom = atomWithStorage<UnspentOutput[]>(
+  "spent-utxos",
+  []
+);
 
 export const pendingBtcUtxosAtom = atom<UnspentOutput[]>([]);
 export const pendingRuneUtxosAtom = atom<UnspentOutput[]>([]);
@@ -20,6 +32,95 @@ export function usePendingBtcUtxos() {
 
 export function usePendingRuneUtxos() {
   return useAtom(pendingRuneUtxosAtom);
+}
+
+export type UtxoRes ={
+	utxoFromMempool: MempoolUtxo[], 
+	utxoFromUnisat: UnisatApiResponse<GetUtxoData>,
+	ocStatus: OrchestratorStatus, 
+	filteredUtxo: UnisatUtxo[]
+	spentOutPointSet: any
+}
+
+export function useUserBtcUtxoDebug(paymentAddress: string | undefined) {
+	// const { paymentAddress } = useLaserEyes()
+	const spentUtxos = useAtomValue(spentUtxosAtom);
+	return useQuery<UtxoRes>({
+		enabled: !!paymentAddress,
+		queryKey: ['unisat-utxos-data-debug', paymentAddress],
+		// todo filter spend utxo
+		queryFn: async () => {
+			const spentOutPointSet = new Set()
+			spentUtxos.forEach(e => spentOutPointSet.add(`${e.txid}:${e.vout}`))
+			const res = await getUtxoData(paymentAddress!)
+			const ocStatus = await ocActor.get_status()
+			// const utxoFromMempool = await getAddressUtxo(paymentAddress!) ?? []
+			// const findUtxoHeightInMempool = (txid: string, vout: number) => {
+			// 	const utxo = utxoFromMempool.find(e => e.txid === txid && e.vout === vout)
+			// 	return utxo?.status.block_height
+			// }
+			let filteredUtxo = res.data.utxo
+				.filter(
+					(e) => !spentOutPointSet.has(`${e.txid}:${e.vout}`)
+				)
+				.filter(
+					e => {
+						// let block_height_from_mempool = findUtxoHeightInMempool(e.txid, e.vout)
+						// if (block_height_from_mempool === undefined) return false
+            // e.height
+						return e.height <= (ocStatus.last_block?.[0]?.block_height ?? 0)
+					}
+				)
+			console.log({
+        // utxoFromMempool, 
+        ocStatus, 
+        res, 
+        filteredUtxo})
+			return {
+				filteredUtxo,
+				utxoFromMempool: [],
+				utxoFromUnisat: res,
+				ocStatus,
+				spentOutPointSet
+			}
+		},
+		refetchInterval: 15 * 1000 // Refetch every 15 s
+	})
+}
+
+export function useLoginUserBtcUtxo() {
+	const { paymentAddress } = useLaserEyes()
+	const spentUtxos = useAtomValue(spentUtxosAtom);
+	return useQuery<MaestroUtxo[]>({
+		enabled: !!paymentAddress,
+		queryKey: ['unisat-utxo-data', paymentAddress],
+		// todo filter spend utxo
+		queryFn: async () => {
+			const spentOutPointSet = new Set()
+			spentUtxos.forEach(e => spentOutPointSet.add(`${e.txid}:${e.vout}`))
+			const res = await getUserRuneUtxosFromMaestro(paymentAddress)
+			const ocStatus = await ocActor.get_status()
+			// const utxoFromMempool = await getAddressUtxo(paymentAddress) ?? []
+			// const findUtxoHeightInMempool = (txid: string, vout: number) => {
+			// 	const utxo = utxoFromMempool.find(e => e.txid === txid && e.vout === vout)
+			// 	return utxo?.status.block_height
+			// }
+			let filteredUtxo = res
+				.filter(
+					(e) => !spentOutPointSet.has(`${e.txid}:${e.vout}`)
+				)
+				.filter(
+					e => {
+						// let block_height_from_mempool = findUtxoHeightInMempool(e.txid, e.vout)
+						// if (block_height_from_mempool === undefined) return false
+						return e.height <= (ocStatus.last_block?.[0]?.block_height ?? 0)
+					}
+				)
+			console.log({ ocStatus, res, filteredUtxo})
+			return filteredUtxo
+		},
+		refetchInterval: 30 * 1000 // Refetch every 15 s
+	})
 }
 
 export function useBtcUtxos(address: string | undefined, pubkey?: string) {
