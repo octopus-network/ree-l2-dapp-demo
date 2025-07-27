@@ -2,7 +2,9 @@
 use candid::{self, CandidType, Decode, Deserialize, Encode, Principal};
 use ic_cdk::api::call::CallResult as Result;
 
-#[derive(CandidType, Deserialize)]
+use crate::{ETCH_CANISTER_ID, RUNE_INDEXER_CANISTER};
+
+#[derive(CandidType, Deserialize, Debug)]
 pub struct GetEtchingResult {
     pub confirmations: u32,
     pub rune_id: String,
@@ -75,4 +77,19 @@ impl Service {
     pub async fn get_rune_by_id(&self, arg0: String) -> Result<(Option<RuneEntry>,)> {
         ic_cdk::call(self.0, "get_rune_by_id", (arg0,)).await
     }
+}
+
+
+pub async fn get_etching(txid: String)->Option<GetEtchingResult>{
+    let rune_indexer_principal = Principal::from_text(RUNE_INDEXER_CANISTER).ok()?;
+    let (result,): (Option<GetEtchingResult>,) = ic_cdk::api::call::call(
+        rune_indexer_principal,
+        "get_etching",
+        (txid,),
+    )
+    .await
+    .ok()?;
+    result
+
+
 }

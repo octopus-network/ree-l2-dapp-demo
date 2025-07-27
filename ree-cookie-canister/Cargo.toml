@@ -17,6 +17,8 @@ ic-cdk-macros = "0.17"
 ic-stable-structures = "0.6"
 ic-canisters-http-types = { git = "https://github.com/dfinity/ic", tag = "release-2024-03-06_23-01+p2p" }
 ic-canister-log = { git = "https://github.com/dfinity/ic", tag = "release-2024-01-18_23-01" }
+icrc-ledger-client-cdk = { git = "https://github.com/dfinity/ic", tag = "release-2024-01-18_23-01" }
+icrc-ledger-types = { git = "https://github.com/dfinity/ic", tag = "release-2024-01-18_23-01" }
 
 anyhow =  "1"
 thiserror = "1"
@@ -31,7 +33,8 @@ time = "0.3"
 # ree-types = { git = "https://github.com/octopus-network/ree-types.git", rev = "a48b38f16efdb1e9703e6e9c45af681ae2b61f59" }
 # ree-types = "0.3"
 # ree-types = { git =  "https://github.com/octopus-network/ree-types.git", rev = "1bc6810a7aac2576c32bdca26b6dd399b1a307eb" }
-ree-types = { git =  "https://github.com/octopus-network/ree-types.git", rev = "6d98cd59310a86d951105cbf4cf2a4feed2e2057" }
+# ree-types = { git =  "https://github.com/octopus-network/ree-types.git", rev = "6d98cd59310a86d951105cbf4cf2a4feed2e2057" }
+ree-types = { git = "https://github.com/octopus-network/ree-types.git", rev = "3d0fb503384082bdeaf368305c4229801ee9ebd3" }
 bincode = "1.3.3"
 itertools = "0.14.0"
 

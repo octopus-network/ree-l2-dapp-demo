@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{game::game::GameStatus, *};
 use candid::Nat;
 use ic_cdk::api::call::RejectionCode;
 use thiserror::Error;
@@ -7,6 +7,8 @@ pub type Result<R> = std::result::Result<R, ExchangeError>;
 
 #[derive(Debug, Error, CandidType)]
 pub enum ExchangeError {
+    #[error("Game status not match, expect {0:?}, got {1:?}")]
+    GameStatusNotMatch(GameStatus, GameStatus),
     #[error("nat convert error: {0}")]
     NatConvertError(Nat),
     #[error("overflow")]
@@ -41,6 +43,8 @@ pub enum ExchangeError {
     PoolAlreadyExists,
     #[error("the pool has not been initialized or has been removed")]
     EmptyPool,
+    #[error("Pool not found in game: {0}")]
+    PoolNotFound(String),
     #[error("invalid input coin")]
     InvalidInput,
     #[error("couldn't derive a chain key for pool")]
@@ -57,8 +61,12 @@ pub enum ExchangeError {
     PoolStateExpired(u64),
     #[error("pool address not found")]
     PoolAddressNotFound,
+    #[error("Rune not found in game: {0}")]
+    RuneNotFound(String),
     #[error("Cookie balance({0}) insufficient")]
     CookieBalanceInsufficient(u128),
+    #[error("Game Not Found: {0}")]
+    GameNotFound(usize),
     #[error("Game Not End")]
     GameNotEnd,
     #[error("Game End")]

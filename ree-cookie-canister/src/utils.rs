@@ -54,9 +54,9 @@ pub fn get_max_recoverable_reorg_depth(network: BitcoinNetwork) -> u32 {
     }
 }
 
-pub fn calculate_premine_rune_amount() -> u128 {
-    read_state(|s| s.game.claimed_cookies * 120 / 100)
-}
+// pub fn calculate_premine_rune_amount() -> u128 {
+//     read_state(|s| s.game.claimed_cookies * 120 / 100)
+// }
 
 pub async fn request_address(key_path: String)->Result<(Pubkey, TweakedPublicKey, Address)> {
     let untweaked_pubkey = request_schnorr_key("key_1", key_path.into_bytes()).await?;
