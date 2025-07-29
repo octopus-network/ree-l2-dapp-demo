@@ -21,7 +21,7 @@ export function Home() {
   }, [isLoadingGames]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#f0f2f5]">
+    <div className="flex flex-col items-center justify-start min-h-screen p-4 bg-[#f0f2f5]">
       <button
         onClick={() => {
           console.log("address", address);
@@ -32,7 +32,7 @@ export function Home() {
           }
           openCreateGameModal(true);
         }}
-        className="mb-4 px-6 py-3 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+        className="my-12 px-6 py-3 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
       >
         Create New Game
       </button>
@@ -53,6 +53,8 @@ export function Home() {
 }
 
 function GameItem({ game }: { game: Game }) {
+  let status_str = game_status_str(game.game_status);
+  let claimable_cookie = Number(game.rune_premine_amount) * 4 /5; 
   return (
     <Link to={`/game/${game.game_id}`} className="w-full">
       <div className="border p-4 rounded-md shadow-md bg-white cursor-pointer hover:scale-103 transition-transform">
@@ -60,7 +62,7 @@ function GameItem({ game }: { game: Game }) {
         <p>Cookie Amount per Claim: {game.claim_amount_per_click}</p>
         <p>Claim Cooling Down: {game.claim_cooling_down} seconds</p>
         <p>Gamer Register Fee: {game.gamer_register_fee} sats</p>
-        <p>Game Status: {game_status_str(game.game_status)}</p>
+        <p>Game Status: {status_str} {status_str === 'Playing' && <span>{`${game.claimed_cookies} / ${claimable_cookie}`}</span>}</p>
         <p>Creator: {game.creator_address}</p>
       </div>
     </Link>

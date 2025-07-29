@@ -4,6 +4,7 @@ type AddLiquidityInfo = record {
 };
 type CoinBalance = record { id : text; value : nat };
 type CreateGameArgs = record {
+  rune_premine_amount : nat;
   create_address : text;
   claim_amount_per_click : nat;
   game_name : text;
@@ -55,12 +56,9 @@ type ExchangeError = variant {
   PoolAddressMismatch : record { actual : text; expected : text };
 };
 type ExchangeState = record {
-  richswap_pool_address : text;
   txid_game_map : vec record { text; nat64 };
   orchestrator : principal;
   games : vec record { nat64; Game };
-  ethcing_canister_principle : principal;
-  ii_canister : principal;
 };
 type ExecuteTxArgs = record {
   zero_confirmed_tx_queue_length : nat32;
@@ -72,9 +70,10 @@ type ExecuteTxArgs = record {
 type Game = record {
   creator : principal;
   claimed_cookies : nat;
+  rune_premine_amount : nat;
   creator_address : text;
+  pool : opt Pool;
   rune_info : opt RuneInfo;
-  pool_manager : PoolManager;
   gamers : vec record { text; Gamer };
   claim_amount_per_click : nat;
   game_id : nat64;
@@ -84,13 +83,7 @@ type Game = record {
   claim_cooling_down : nat64;
   gamer_register_fee : nat64;
 };
-type GameStatus = variant {
-  WaitAddedLiquidity;
-  Playing;
-  Withdrawing;
-  Initializing;
-  Etching;
-};
+type GameStatus = variant { WaitAddedLiquidity; Playing; Withdrawing; Etching };
 type Gamer = record {
   is_withdrawn : bool;
   last_click_time : nat64;
@@ -144,11 +137,6 @@ type PoolInfo = record {
   nonce : nat64;
   utxos : vec Utxo;
 };
-type PoolManager = record {
-  path_prefix : text;
-  rune_pool : opt Pool;
-  btc_pools : vec record { text; Pool };
-};
 type PoolState = record {
   id : text;
   utxo : Utxo;
@@ -170,16 +158,12 @@ type ReorgError = variant {
   Unrecoverable;
   Recoverable : record { height : nat32; depth : nat32 };
 };
-type Result = variant { Ok; Err : text };
-type Result_1 = variant { Ok : nat; Err : ExchangeError };
-type Result_2 = variant { Ok : nat64; Err : text };
-type Result_3 = variant { Ok : text; Err : text };
+type Result = variant { Ok : nat; Err : ExchangeError };
+type Result_1 = variant { Ok : nat64; Err : text };
+type Result_2 = variant { Ok : text; Err : text };
+type Result_3 = variant { Ok; Err : text };
 type RollbackTxArgs = record { txid : text };
-type RuneInfo = record {
-  rune_premine_amount : nat;
-  rune_name : text;
-  rune_id : text;
-};
+type RuneInfo = record { rune_name : text; rune_id : text };
 type UserAction = variant {
   Withdraw : text;
   AddLiquidity;
@@ -192,24 +176,22 @@ type Utxo = record {
   txid : text;
   vout : nat32;
 };
-service : (principal, principal, principal, text) -> {
-  add_new_btc_pool : (nat64, Utxo) -> (Result);
-  claim : (nat64) -> (Result_1);
-  create_game : (CreateGameArgs) -> (Result_2);
-  end_game : (nat64) -> ();
-  etch_rune : (nat64, text) -> (Result_3);
-  etching_test : () -> (Result_3);
-  execute_tx : (ExecuteTxArgs) -> (Result_3);
-  finalize_etch : (nat64) -> (Result_3);
+service : (principal) -> {
+  claim : (nat64) -> (Result);
+  create_game : (CreateGameArgs) -> (Result_1);
+  etch_rune : (nat64, text) -> (Result_2);
+  etching_test : () -> (Result_2);
+  execute_tx : (ExecuteTxArgs) -> (Result_2);
+  finalize_etch : (nat64) -> (Result_2);
   get_exchange_state : () -> (ExchangeState) query;
   get_game_info : (nat64) -> (opt Game) query;
+  get_game_pool_address : (nat64) -> (text);
   get_games_info : () -> (vec Game) query;
-  get_new_btc_pool_address : (nat64) -> (text);
   get_pool_info : (GetPoolInfoArgs) -> (opt PoolInfo) query;
   get_pool_list : () -> (vec PoolBasic) query;
   get_pool_states : () -> (vec PoolState) query;
-  new_block : (NewBlockInfo) -> (Result);
+  new_block : (NewBlockInfo) -> (Result_3);
   query_add_liquidity_info : (nat64) -> (AddLiquidityInfo) query;
   reset_blocks : () -> ();
-  rollback_tx : (RollbackTxArgs) -> (Result);
+  rollback_tx : (RollbackTxArgs) -> (Result_3);
 }

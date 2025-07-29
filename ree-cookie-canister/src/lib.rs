@@ -15,11 +15,11 @@ pub use external::rune_indexer::{RuneEntry, Service as RuneIndexer};
 pub use ic_canister_log::log;
 pub use ic_stable_structures::StableBTreeMap;
 pub use log::*;
-use ree_types::exchange_interfaces::{ExecuteTxArgs, ExecuteTxResponse};
 pub use ree_types::Pubkey;
 pub use ree_types::{Txid, Utxo};
 pub use serde::{Deserialize, Serialize};
 
+pub const SIWB_TESTNET_CANISTER: &'static str = "stxih-wyaaa-aaaah-aq2la-cai";
 pub const RUNE_INDEXER_CANISTER: &'static str = "f2dwm-caaaa-aaaao-qjxlq-cai";
 pub const TESTNET_RUNE_INDEXER_CANISTER: &'static str = "f2dwm-caaaa-aaaao-qjxlq-cai";
 pub const ORCHESTRATOR_CANISTER: &'static str = "kqs64-paaaa-aaaar-qamza-cai";
@@ -33,6 +33,5 @@ pub type AddressStr = String;
 pub type RuneName = String;
 pub type RuneId = String;
 pub type GameId = usize;
-pub const MIN_BTC_VALUE: u64 = 10000;
 pub const DUST_BTC_VALUE: u64 = 546;
 

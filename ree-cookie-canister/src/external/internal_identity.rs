@@ -2,11 +2,13 @@ use candid::Principal;
 use ic_cdk::api::call::CallResult;
 use serde_bytes::ByteBuf;
 
-use crate::memory::read_state;
+use crate::SIWB_TESTNET_CANISTER;
 
 pub async fn get_principal(address: String) -> Result<Principal, String> {
-    let ii_canister = read_state(|s| s.ii_canister.clone());
-    let result: CallResult<(Result<ByteBuf, String>,)> = ic_cdk::call(ii_canister, "get_principal", (address,)).await;
+    // let ii_canister = read_state(|s| s.ii_canister.clone());
+    let siwb_principal = Principal::from_text(SIWB_TESTNET_CANISTER)
+        .map_err(|e| format!("Failed to parse SIWB_TESTNET_CANISTER principal: {}", e))?;
+    let result: CallResult<(Result<ByteBuf, String>,)> = ic_cdk::call(siwb_principal, "get_principal", (address,)).await;
     let success_result = result
         .map_err(|e| format!("Failed to call get_principal: {:?}", e))?
         .0

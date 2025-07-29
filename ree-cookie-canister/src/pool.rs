@@ -1,5 +1,5 @@
 use ree_types::{bitcoin::{key::TweakedPublicKey, Address}, exchange_interfaces::PoolInfo};
-use std::{cmp::max, collections::{BTreeMap, HashMap, HashSet}};
+use std::{cmp::max, collections::BTreeMap};
 
 use crate::{utils::request_address, *};
 
@@ -48,6 +48,7 @@ impl Pool {
     }
 
     pub fn commit(&mut self, new_state: PoolState) {
+        self.nonce = new_state.nonce;
         self.states.push(new_state);
         self.pending_transaction_counts += 1;
     }

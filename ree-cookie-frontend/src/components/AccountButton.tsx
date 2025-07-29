@@ -6,10 +6,11 @@ import { useEffect, useState } from "react";
 
 export function AccountButton() {
   const laserEyes = useLaserEyes();
-  const { address, isInitializing, disconnect } =
+  const { isInitializing, disconnect, address } =
     laserEyes;
   const {
     identity,
+    // identityAddress,
     clear,
   } = useSiwbIdentity();
 
@@ -38,18 +39,18 @@ export function AccountButton() {
       ) : (
         <div className="flex items-center ">
           {identity && (
-            <div className="text-foreground relative flex items-center rounded-sm border border-orange-500 px-3 text-xl font-medium text-orange-500 md:text-2xl">
+            <div className="mx-2 text-foreground relative flex items-center rounded-sm border border-orange-500 px-3 text-xl font-medium text-orange-500 md:text-2xl">
               {shortenAddress(identity?.getPrincipal().toText())}
             </div>
           )}
 
           <div className="text-foreground relative flex items-center rounded-sm border border-orange-500 px-3 text-xl font-medium text-orange-500 md:text-2xl">
-            {shortenAddress(address)}
+            {shortenAddress(address!)}
           </div>
           <button
             onClick={() => {
-              clear();
               disconnect();
+              clear();
             }}
             className="ml-2 rounded-full bg-red-500/20 p-2 transition-all hover:bg-red-500/30"
           >

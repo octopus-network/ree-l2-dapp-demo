@@ -1,23 +1,15 @@
-use ic_cdk::api::management_canister::bitcoin::Satoshi;
 use ic_stable_structures::storable::Bound;
 use ic_stable_structures::Storable;
-use itertools::Itertools;
-use ree_types::{CoinBalance, CoinId, InputCoin, OutputCoin};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use crate::game::game::{CreateGameArgs, Game, GameStatus};
-use crate::memory::{read_state, };
-use crate::pool::PoolManager;
+use crate::game::game::Game;
 use crate::*;
 
 #[derive(Deserialize, Serialize, Clone, CandidType)]
 pub struct ExchangeState {
     pub games: HashMap<GameId, Game>,
     pub orchestrator: Principal,
-    pub ii_canister: Principal,
-    pub ethcing_canister_principle: Principal,
-    pub richswap_pool_address: String,
     pub txid_game_map: HashMap<String, GameId>,
 }
 
@@ -37,16 +29,10 @@ impl Storable for ExchangeState {
 impl ExchangeState {
     pub fn init(
         orchestrator: Principal,
-        ii_canister: Principal,
-        etching_canister_principle: Principal,
-        richswap_pool_address: String,
     ) -> Self {
         Self {
             games: HashMap::new(),
             orchestrator,
-            ii_canister,
-            ethcing_canister_principle: etching_canister_principle,
-            richswap_pool_address,
             txid_game_map: HashMap::new(),
         }
     }

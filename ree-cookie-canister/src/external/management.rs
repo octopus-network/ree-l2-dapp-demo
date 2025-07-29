@@ -94,14 +94,3 @@ pub async fn schnorr_sign(
     .map_err(|e| format!("sign_with_schnorr failed {e:?}"))?;
     Ok(reply.signature)
 }
-
-pub(crate) async fn sign_prehash_with_schnorr(
-    digest: impl AsRef<[u8; 32]>,
-    key_name: impl ToString,
-    path: Vec<u8>,
-) -> Result<Vec<u8>> {
-    let signature = schnorr_sign(digest.as_ref().to_vec(), path, key_name, None)
-        .await
-        .map_err(|_| ExchangeError::ChainKeyError)?;
-    Ok(signature)
-}

@@ -1,6 +1,6 @@
 import { useLaserEyes } from "@omnisat/lasereyes";
 import { Button } from "antd";
-import { cookieActor, get_btc_pool } from "canister/cookie/actor";
+import { cookieActor } from "canister/cookie/actor";
 import { Game, Gamer } from "canister/cookie/service.did";
 import { ocActor } from "canister/orchestrator/actor";
 import { OrchestratorStatus } from "canister/orchestrator/service.did";
@@ -11,6 +11,11 @@ import { convertUtxo, getP2trAressAndScript, registerTx } from "utils";
 import { useLoginUserBtcUtxo, useWalletBtcUtxos } from "hooks/use-utxos";
 import { convertUnisatUtxo } from "api/unisat";
 import { convertMaestroUtxo } from "api/maestro";
+import { useSiwbIdentity } from "ic-siwb-lasereyes-connector";
+import { address } from "bitcoinjs-lib";
+import { useAtom } from "jotai";
+import { Connect } from "vite";
+import { connectWalletModalOpenAtom } from "./ConnectDialog";
 
 export function Register({
   game,
@@ -21,10 +26,14 @@ export function Register({
   // paymentAddress: string;
   // paymentAddressUtxos: UnspentOutput[] | undefined;
 }) {
-  const { signPsbt, address, publicKey } = useLaserEyes();
+  const [connectWalletModalOpen, setConnectWalletModalOpen] = useAtom(
+    connectWalletModalOpenAtom
+  );
+  const { signPsbt, paymentAddress, address, publicKey } = useLaserEyes();
   // const [registerTxid, setRegisterTxid] = useState<string | undefined>(undefined)
   //   const btcUtxos = useWalletBtcUtxos();
   const { data: btcUtxos, isLoading: isLoadingUtxo } = useLoginUserBtcUtxo();
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const isLoading = useMemo(() => {
     return isLoadingUtxo;
@@ -32,16 +41,17 @@ export function Register({
 
   let register = async () => {
     if (!btcUtxos) {
+      console.log({ address, paymentAddress, btcUtxos });
       alert("No UTXOs found");
       return;
     }
     // let register_info: RegisterInfo = await cookieActor.get_register_info()
-    const btc_pool = get_btc_pool(game);
+    // const btc_pool = get_btc_pool(game);
+    const btc_pool = game.pool[0]!;
     const last_state = btc_pool.states[btc_pool.states.length - 1];
     const { address: poolAddress, output } = getP2trAressAndScript(
       btc_pool.pubkey
     );
-    console.log({ poolAddress, output });
     // let recommendedFeeRate = await Orchestrator.getRecommendedFee()
     let recommendedFeeRate = await ocActor
       .get_status()
@@ -68,7 +78,7 @@ export function Register({
         convertMaestroUtxo(e, publicKey)
       ),
       poolBtcUtxo: convertUtxo(last_state?.utxo!, btc_pool.pubkey),
-      paymentAddress: address,
+      paymentAddress: paymentAddress,
       poolAddress: poolAddress!,
       feeRate: recommendedFeeRate,
       registerFee: game.gamer_register_fee,
@@ -156,17 +166,29 @@ export function Register({
 
   return (
     <div>
-      <Button
-        disabled={isLoading}
-        onClick={() =>
-          register().catch((e) => {
-            alert("Register Failed: " + e.message);
-            console.error(e);
-          })
-        }
-      >
-        register
-      </Button>
+      {address ? (
+        <Button
+          loading={isLoading}
+          onClick={() => {
+            setIsRegistering(true);
+            register()
+              .catch((e) => {
+                alert("Register Failed: " + e.message);
+                console.error(e);
+              })
+              .finally(() => {
+                setIsRegistering(false);
+              });
+          }}
+        >
+          register
+        </Button>
+      ) : (
+        <Button onClick={() => setConnectWalletModalOpen(true)}>
+          Connet Wallet
+        </Button>
+      )}
+
       {/* <label>{JSON.stringify(btcUtxos)}</label> */}
       {/* <label>{psbt?.toHex()}</label> */}
       {/* <label>{JSON.stringify(registerTxid)}</label> */}

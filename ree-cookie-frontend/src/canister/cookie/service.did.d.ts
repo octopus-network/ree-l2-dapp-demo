@@ -8,6 +8,7 @@ export interface AddLiquidityInfo {
 }
 export interface CoinBalance { 'id' : string, 'value' : bigint }
 export interface CreateGameArgs {
+  'rune_premine_amount' : bigint,
   'create_address' : string,
   'claim_amount_per_click' : bigint,
   'game_name' : string,
@@ -57,12 +58,9 @@ export type ExchangeError = { 'InvalidSignPsbtArgs' : string } |
   { 'RuneIdNotMatch' : [string, string] } |
   { 'PoolAddressMismatch' : { 'actual' : string, 'expected' : string } };
 export interface ExchangeState {
-  'richswap_pool_address' : string,
   'txid_game_map' : Array<[string, bigint]>,
   'orchestrator' : Principal,
   'games' : Array<[bigint, Game]>,
-  'ethcing_canister_principle' : Principal,
-  'ii_canister' : Principal,
 }
 export interface ExecuteTxArgs {
   'zero_confirmed_tx_queue_length' : number,
@@ -74,9 +72,10 @@ export interface ExecuteTxArgs {
 export interface Game {
   'creator' : Principal,
   'claimed_cookies' : bigint,
+  'rune_premine_amount' : bigint,
   'creator_address' : string,
+  'pool' : [] | [Pool],
   'rune_info' : [] | [RuneInfo],
-  'pool_manager' : PoolManager,
   'gamers' : Array<[string, Gamer]>,
   'claim_amount_per_click' : bigint,
   'game_id' : bigint,
@@ -89,7 +88,6 @@ export interface Game {
 export type GameStatus = { 'WaitAddedLiquidity' : null } |
   { 'Playing' : null } |
   { 'Withdrawing' : null } |
-  { 'Initializing' : null } |
   { 'Etching' : null };
 export interface Gamer {
   'is_withdrawn' : boolean,
@@ -144,11 +142,6 @@ export interface PoolInfo {
   'nonce' : bigint,
   'utxos' : Array<Utxo>,
 }
-export interface PoolManager {
-  'path_prefix' : string,
-  'rune_pool' : [] | [Pool],
-  'btc_pools' : Array<[string, Pool]>,
-}
 export interface PoolState {
   'id' : string,
   'utxo' : Utxo,
@@ -168,20 +161,16 @@ export type ReorgError = {
   { 'BlockNotFoundInState' : { 'height' : number } } |
   { 'Unrecoverable' : null } |
   { 'Recoverable' : { 'height' : number, 'depth' : number } };
-export type Result = { 'Ok' : null } |
-  { 'Err' : string };
-export type Result_1 = { 'Ok' : bigint } |
+export type Result = { 'Ok' : bigint } |
   { 'Err' : ExchangeError };
-export type Result_2 = { 'Ok' : bigint } |
+export type Result_1 = { 'Ok' : bigint } |
   { 'Err' : string };
-export type Result_3 = { 'Ok' : string } |
+export type Result_2 = { 'Ok' : string } |
+  { 'Err' : string };
+export type Result_3 = { 'Ok' : null } |
   { 'Err' : string };
 export interface RollbackTxArgs { 'txid' : string }
-export interface RuneInfo {
-  'rune_premine_amount' : bigint,
-  'rune_name' : string,
-  'rune_id' : string,
-}
+export interface RuneInfo { 'rune_name' : string, 'rune_id' : string }
 export type UserAction = { 'Withdraw' : string } |
   { 'AddLiquidity' : null } |
   { 'Init' : null } |
@@ -193,25 +182,23 @@ export interface Utxo {
   'vout' : number,
 }
 export interface _SERVICE {
-  'add_new_btc_pool' : ActorMethod<[bigint, Utxo], Result>,
-  'claim' : ActorMethod<[bigint], Result_1>,
-  'create_game' : ActorMethod<[CreateGameArgs], Result_2>,
-  'end_game' : ActorMethod<[bigint], undefined>,
-  'etch_rune' : ActorMethod<[bigint, string], Result_3>,
-  'etching_test' : ActorMethod<[], Result_3>,
-  'execute_tx' : ActorMethod<[ExecuteTxArgs], Result_3>,
-  'finalize_etch' : ActorMethod<[bigint], Result_3>,
+  'claim' : ActorMethod<[bigint], Result>,
+  'create_game' : ActorMethod<[CreateGameArgs], Result_1>,
+  'etch_rune' : ActorMethod<[bigint, string], Result_2>,
+  'etching_test' : ActorMethod<[], Result_2>,
+  'execute_tx' : ActorMethod<[ExecuteTxArgs], Result_2>,
+  'finalize_etch' : ActorMethod<[bigint], Result_2>,
   'get_exchange_state' : ActorMethod<[], ExchangeState>,
   'get_game_info' : ActorMethod<[bigint], [] | [Game]>,
+  'get_game_pool_address' : ActorMethod<[bigint], string>,
   'get_games_info' : ActorMethod<[], Array<Game>>,
-  'get_new_btc_pool_address' : ActorMethod<[bigint], string>,
   'get_pool_info' : ActorMethod<[GetPoolInfoArgs], [] | [PoolInfo]>,
   'get_pool_list' : ActorMethod<[], Array<PoolBasic>>,
   'get_pool_states' : ActorMethod<[], Array<PoolState>>,
-  'new_block' : ActorMethod<[NewBlockInfo], Result>,
+  'new_block' : ActorMethod<[NewBlockInfo], Result_3>,
   'query_add_liquidity_info' : ActorMethod<[bigint], AddLiquidityInfo>,
   'reset_blocks' : ActorMethod<[], undefined>,
-  'rollback_tx' : ActorMethod<[RollbackTxArgs], Result>,
+  'rollback_tx' : ActorMethod<[RollbackTxArgs], Result_3>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

@@ -1,7 +1,7 @@
 use ic_cdk::api::management_canister::bitcoin::{BitcoinNetwork, Satoshi};
 use ree_types::bitcoin::{Address, key::{Secp256k1, TapTweak, TweakedPublicKey}, Network};
 
-use crate::{external::management::request_schnorr_key, memory::read_state, *};
+use crate::{external::management::request_schnorr_key, *};
 
 pub(crate) fn tweak_pubkey_with_empty(untweaked: Pubkey) -> TweakedPublicKey {
     let secp = Secp256k1::new();

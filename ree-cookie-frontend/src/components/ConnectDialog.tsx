@@ -31,6 +31,8 @@ export default function ConnectWalletModal() {
     identityPublicKey,
   } = useSiwbIdentity();
 
+  
+
   const [loading, setLoading] = useState<boolean>(false);
   const [manually, setManually] = useState<boolean>(false);
   /**
@@ -38,6 +40,7 @@ export default function ConnectWalletModal() {
    */
   useEffect(() => {
     if (!isPrepareLoginIdle) return;
+    // setLaserEyes(p)
     const address = getAddress();
     const pubkey = getPublicKey();
     console.log({ address, pubkey, identityPublicKey, connectedBtcAddress });
@@ -107,8 +110,8 @@ export default function ConnectWalletModal() {
         <Button
           key="unisat"
           onClick={async () => {
-            setManually(true);
             await setLaserEyes(p, UNISAT);
+            setManually(true);
           }}
           disabled={loading}
           block

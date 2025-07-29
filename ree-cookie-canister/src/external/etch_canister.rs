@@ -2,7 +2,7 @@ use candid::{CandidType, Nat, Principal};
 use icrc_ledger_client_cdk::{CdkRuntime, ICRC1Client};
 use icrc_ledger_types::{
     icrc1::account::Account,
-    icrc2::approve::{ApproveArgs, ApproveError},
+    icrc2::approve::ApproveArgs,
 };
 use serde::{Deserialize, Serialize};
 

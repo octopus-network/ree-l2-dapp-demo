@@ -29,12 +29,6 @@ thread_local! {
         ).expect("state memory not initialized")
     );
 
-    // pub static GAMER: RefCell<StableBTreeMap<AddressStr, Gamer, Memory>> = RefCell::new(
-    //     StableBTreeMap::init(
-    //         MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)),
-    //     )
-    // );
-
     pub static GAMES: RefCell<StableBTreeMap<AddressStr, Game, Memory>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)),

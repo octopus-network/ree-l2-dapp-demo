@@ -6,9 +6,12 @@ import { AccountButton } from '../components/AccountButton'
 import ConnectButton from '../components/ConnectButton'
 import { Button, Skeleton } from 'antd'
 import { Link } from 'react-router-dom'
+import { useSiwbIdentity } from 'ic-siwb-lasereyes-connector'
 
 export function Topbar() {
-	const { address, connect, signMessage } = useLaserEyes()
+	const { address } = useLaserEyes()
+
+	const { identityAddress } = useSiwbIdentity()
 
 	return (
 		<div 
@@ -23,12 +26,6 @@ export function Topbar() {
 
 			<div className='mr-2'>
 				{address ? (
-					// <Button
-					//   className="rounded-lg border-2 border-blue-500 bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 hover:border-blue-600 transition-colors"
-					//   onClick={() => connect(UNISAT)}
-					// >
-					//   Connect wallet
-					// </Button>
 					<AccountButton />
 				) : (
 					<ConnectButton />

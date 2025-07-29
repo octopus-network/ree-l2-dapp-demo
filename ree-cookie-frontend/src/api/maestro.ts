@@ -6,7 +6,7 @@ const maestroApi = axios.create({
     baseURL: import.meta.env.VITE_MAESTRO_API_URL!,
     headers: {
         'Content-Type': 'application/json',
-        'api-key': import.meta.env.VITE_MAESTRO_API_KEY
+        'api-key': import.meta.env.VITE_MAESTRO_API_KEY!
     }
 })
 
@@ -22,7 +22,8 @@ export type MaestroUtxo = {
     satoshis: string,
     confirmations: number,
     height: number,
-    runes: MaestroRune[]
+    runes: MaestroRune[],
+    inscriptions: any[],
 }
 
 export type MaestroRune = {
@@ -34,12 +35,12 @@ export async function getUserBtcUtxosFromMaestro(
     address: string,
 ) {
     return maestroApi
-        .get<MaestroUtxo[]>(`/address/${address}/utxos`)
+        .get<MaestroUtxoResponse>(`/addresses/${address}/utxos?filter_dust=true`)
         .then(res => {
             if (res.status !== 200) {
                 throw new Error(`Failed to getUserBtcUtxos ${res.statusText}`);
             }
-            return res.data.filter(utxo => utxo.runes.length === 0);
+            return res.data.data.filter(utxo => utxo.runes.length === 0 && utxo.inscriptions.length === 0);
         });
 }
 
@@ -48,13 +49,17 @@ export async function getUserRuneUtxosFromMaestro(
     runeid?: string
 ): Promise<MaestroUtxo[]> {
     return maestroApi
-        .get<MaestroUtxo[]>(`/address/${address}/utxos`)
+        .get<MaestroUtxoResponse>(`/addresses/${address}/utxos`)
         .then(res => {
+            console.log('getUserRuneUtxosFromMaestro', res.data);
             if (res.status !== 200) {
                 throw new Error(`Failed to getUserRuneUtxos ${res.statusText}`);
             }
-            return res.data.filter(utxo => !runeid || utxo.runes.some(rune => rune.rune_id === runeid))
-        });
+            return res.data.data.filter(utxo => !runeid || utxo.runes.some(rune => rune.rune_id === runeid))
+        }).catch(e=>{
+            console.error('getUserRuneUtxosFromMaestro error', e);
+            throw e;
+        })
 }
 
 export function convertMaestroUtxo(

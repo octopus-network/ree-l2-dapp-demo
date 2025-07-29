@@ -16,7 +16,7 @@ import { GetUtxoData, getUtxoData, UnisatApiResponse, UnisatUtxo } from "api/uni
 import { ocActor } from "canister/orchestrator/actor";
 import { getAddressUtxo, MempoolUtxo } from "api/mempool";
 import { OrchestratorStatus } from "canister/orchestrator/service.did";
-import { getUserRuneUtxosFromMaestro, MaestroUtxo } from "api/maestro";
+import { getUserBtcUtxosFromMaestro, getUserRuneUtxosFromMaestro, MaestroUtxo } from "api/maestro";
 
 export const spentUtxosAtom = atomWithStorage<UnspentOutput[]>(
   "spent-utxos",
@@ -98,7 +98,8 @@ export function useLoginUserBtcUtxo() {
 		queryFn: async () => {
 			const spentOutPointSet = new Set()
 			spentUtxos.forEach(e => spentOutPointSet.add(`${e.txid}:${e.vout}`))
-			const res = await getUserRuneUtxosFromMaestro(paymentAddress)
+			const res = await getUserBtcUtxosFromMaestro(paymentAddress)
+      console.log('getUserBtcUtxosFromMaestro', res)
 			const ocStatus = await ocActor.get_status()
 			// const utxoFromMempool = await getAddressUtxo(paymentAddress) ?? []
 			// const findUtxoHeightInMempool = (txid: string, vout: number) => {

@@ -23,14 +23,21 @@ export function cookieActorWithIdentity(
   })
 }
 
-export function game_status_str(game_status: GameStatus): string {
-  return Object.entries(game_status)[0]![0];
+export type GameStatusStr = "Etching" | "Playing" | "WaitAddedLiquidity" | "Withdrawing"
+
+export function game_status_str(game_status: GameStatus): GameStatusStr {
+  let s = Object.entries(game_status)[0]![0];
+  if(["Etching", "Playing", "WaitAddedLiquidity", "Withdrawing"].includes(s)) {
+    return s as GameStatusStr;
+  } else {
+    throw new Error(`Invalid game status: ${s}`);
+  }
 }
 
-export function get_btc_pool(game: Game): Pool {
-  return game.pool_manager.btc_pools[0]?.[1]!;
-}
+// export function get_btc_pool(game: Game): Pool {
+//   return game.pool_manager.btc_pools[0]?.[1]!;
+// }
 
-export function get_rune_pool(game: Game): Pool {
-  return game.pool_manager.rune_pool[0]!;
-}
+// export function get_rune_pool(game: Game): Pool {
+//   return game.pool_manager.rune_pool[0]!;
+// }
