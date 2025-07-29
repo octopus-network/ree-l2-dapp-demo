@@ -11,6 +11,7 @@ import {
 } from "antd";
 import Search from "antd/es/input/Search";
 import {
+  COOKIE_CANISTER_ID,
   cookieActor,
   cookieActorWithIdentity,
   game_status_str,
@@ -108,7 +109,7 @@ export function GameDetail() {
       <div className="w-4/5 mb-4 mt-15">
         <Steps current={current} items={items} onChange={onChange} />
       </div>
-      <div className="mb-4 text-2xl font-bold text-center w-4/5">
+      <div className="text-black mb-4 text-2xl font-bold text-center w-4/5">
         <div>{steps[current]!.content}</div>
       </div>
     </div>
@@ -298,7 +299,7 @@ function Etching({ game }: { game: Game }) {
   let commit_txid = game.etch_rune_commit_tx;
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center text-black">
       {commit_txid ? (
         <EtchProcess
           game={game}
@@ -307,6 +308,9 @@ function Etching({ game }: { game: Game }) {
         />
       ) : (
         <div className="w-100 mt-20">
+          <p>
+            Please transfer 1 $ICP to {COOKIE_CANISTER_ID} before etch
+          </p>
           <Search
             placeholder="Rune Name"
             enterButton="Etch"
