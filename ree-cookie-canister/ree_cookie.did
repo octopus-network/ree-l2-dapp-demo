@@ -180,7 +180,6 @@ service : (principal) -> {
   claim : (nat64) -> (Result);
   create_game : (CreateGameArgs) -> (Result_1);
   etch_rune : (nat64, text) -> (Result_2);
-  etching_test : () -> (Result_2);
   execute_tx : (ExecuteTxArgs) -> (Result_2);
   finalize_etch : (nat64) -> (Result_2);
   get_exchange_state : () -> (ExchangeState) query;
@@ -189,7 +188,6 @@ service : (principal) -> {
   get_games_info : () -> (vec Game) query;
   get_pool_info : (GetPoolInfoArgs) -> (opt PoolInfo) query;
   get_pool_list : () -> (vec PoolBasic) query;
-  get_pool_states : () -> (vec PoolState) query;
   new_block : (NewBlockInfo) -> (Result_3);
   query_add_liquidity_info : (nat64) -> (AddLiquidityInfo) query;
   reset_blocks : () -> ();

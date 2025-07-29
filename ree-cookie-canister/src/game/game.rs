@@ -103,10 +103,6 @@ impl Game {
         self.claimable_amount() == self.claimed_cookies
     }
 
-    // pub fn add_liquidity(&mut self) {
-    //     self.already_add_liquidity = true;
-    // }
-
     pub fn able_claim(&self, gamer_id: AddressStr) -> Result<()> {
         if self.is_end() {
             return Err(ExchangeError::GameEnd);
@@ -182,24 +178,11 @@ impl Game {
 
     pub fn finalize_tx(&mut self, txid: Txid) -> Result<()> {
         self.pool.as_mut().unwrap().finalize(txid)?;
-        // if let Some(pool) = self.pool_manager.btc_pools.get_mut(&pool_address) {
-        //     pool.finalize(txid)?;
-        // } else if let Some(pool) = self.pool_manager.rune_pool.as_mut() {
-        //     pool.finalize(txid)?;
-        // } else {
-        //     return Err(ExchangeError::PoolNotFound(pool_address));
-        // }
+    
         Ok(())
     }
 
     pub fn rollback_tx(&mut self, txid: Txid) -> Result<()> {
-        // if let Some(pool) = self.pool_manager.btc_pools.get_mut(&pool_address) {
-        //     pool.rollback(txid)?;
-        // } else if let Some(pool) = self.pool_manager.rune_pool.as_mut() {
-
-        // } else {
-        //     return Err(ExchangeError::PoolNotFound(pool_address));
-        // }
         let rollback_state = self.pool.as_mut().unwrap().rollback(txid)?;
         for state in rollback_state {
             match state.user_action {
@@ -240,19 +223,6 @@ impl Game {
             .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?;
 
         let last_state = pool.last_state().ok_or(ExchangeError::LastStateNotFound)?;
-
-        // let rune_pool = self
-        //     .pool_manager
-        //     .rune_pool
-        //     .clone()
-        //     .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?;
-
-        // let last_state = self
-        //     .pool_manager
-        //     .rune_pool.clone()
-        //     .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?
-        //     .last_state()
-        //     .ok_or(ExchangeError::LastStateNotFound)?;
 
         let pool_expected_spend_rune = self.calculate_add_liquidity_rune_amount();
         let pool_expected_spend_btc = self.gamers.len() as u128 * self.gamer_register_fee as u128;
@@ -303,25 +273,6 @@ impl Game {
             ExchangeError::InvalidSignPsbtArgs("pool_utxo_receive not found".to_string()),
         )?;
 
-        // let new_rune_balance = rune_info
-        //     .rune_premine_amount
-        //     .checked_sub(pool_expected_spend_rune)
-        //     .ok_or(ExchangeError::Overflow)?;
-
-        // let new_utxo = Utxo::try_from(
-        //     pool_new_outpoint,
-        //     Some(CoinBalance {
-        //         id: rune_info.rune_id.clone(),
-        //         value: new_rune_balance,
-        //     }),
-        //     last_state
-        //         .utxo
-        //         .sats
-        //         .checked_add(self.gamer_register_fee)
-        //         .ok_or(ExchangeError::Overflow)?,
-        // )
-        // .map_err(|e| ExchangeError::InvalidSignPsbtArgs(e.to_string()))?;
-
         let new_state = PoolState {
             id: txid,
             nonce: last_state
@@ -337,80 +288,6 @@ impl Game {
             (pool.key_derivation_path.clone(), last_state.utxo.clone()),
         ));
     }
-
-    // pub fn validate_add_liquidity_btc(
-    //     &self,
-    //     txid: Txid,
-    //     nonce: u64,
-    //     pool_utxo_spent: Vec<String>,
-    //     pool_utxo_received: Vec<Utxo>,
-    //     input_coins: Vec<InputCoin>,
-    //     output_coins: Vec<OutputCoin>,
-    //     initiator: AddressStr,
-    //     btc_pool_address: AddressStr,
-    //     richswap_pool_address: AddressStr,
-    // ) -> Result<(PoolState, (String, Utxo))> {
-    //     assert!(
-    //         matches!(self.game_status, GameStatus::WaitAddedLiquidity),
-    //         "GameStatus should be WaitAddedLiquidity, but got: {:?}",
-    //         self.game_status
-    //     );
-
-    //     let btc_pool = self
-    //         .pool_manager
-    //         .btc_pools
-    //         .get(&btc_pool_address)
-    //         .ok_or(ExchangeError::PoolNotFound(btc_pool_address.clone()))?;
-
-    //     let last_state = btc_pool
-    //         .last_state()
-    //         .ok_or(ExchangeError::LastStateNotFound)?;
-
-    //     let expected_spend_btc = last_state.btc_balance() as u128 - 546;
-
-    //     (input_coins.is_empty()
-    //         && output_coins.len() == 1
-    //         && output_coins[0].coin.id.eq(&CoinId::btc())
-    //         && output_coins[0].coin.value == expected_spend_btc
-    //         && output_coins[0].to.eq(&richswap_pool_address)
-    //     )
-    //         .then(|| ())
-    //         .ok_or(ExchangeError::InvalidSignPsbtArgs(format!(
-    //             "input_coins: {:?}, output_coins: {:?}",
-    //             input_coins, output_coins
-    //         )))?;
-
-    //     // check nonce matches
-    //     (last_state.nonce == nonce)
-    //         .then(|| ())
-    //         .ok_or(ExchangeError::PoolStateExpired(last_state.nonce))?;
-
-    //     // the pool_utxo_receive should exist
-    //     let new_utxo = pool_utxo_received.last().map(|s| s.clone()).ok_or(
-    //         ExchangeError::InvalidSignPsbtArgs("pool_utxo_receive not found".to_string()),
-    //     )?;
-
-    //     // let new_utxo = Utxo::try_from(pool_new_outpoint, None, 546)
-    //     //     .map_err(|e| ExchangeError::InvalidSignPsbtArgs(e.to_string()))?;
-
-    //     let new_state = PoolState {
-    //         id: txid,
-    //         nonce: last_state
-    //             .nonce
-    //             .checked_add(1)
-    //             .ok_or(ExchangeError::Overflow)?,
-    //         utxo: new_utxo,
-    //         user_action: UserAction::AddLiquidity,
-    //     };
-
-    //     return Ok((
-    //         new_state,
-    //         (
-    //             btc_pool.key_derivation_path.clone(),
-    //             last_state.utxo.clone(),
-    //         ),
-    //     ));
-    // }
 
     pub fn validate_register(
         &self,
@@ -449,11 +326,6 @@ impl Game {
             .pool
             .as_ref()
             .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?;
-        // let btc_pool = self
-        //     .pool_manager
-        //     .btc_pools
-        //     .get(&btc_pool_address)
-        //     .ok_or(ExchangeError::PoolAddressNotFound)?;
 
         let last_state = btc_pool
             .last_state()
@@ -490,16 +362,6 @@ impl Game {
             ExchangeError::InvalidSignPsbtArgs("pool_utxo_receive not found".to_string()),
         )?;
 
-        // let new_utxo = Utxo::try_from(
-        //     pool_new_outpoint.outpoint(),
-        //     last_state.utxo.maybe_rune.clone(),
-        //     last_state
-        //         .utxo
-        //         .sats
-        //         .checked_add(self.gamer_register_fee)
-        //         .ok_or(ExchangeError::Overflow)?,
-        // )
-        // .map_err(|e| ExchangeError::InvalidSignPsbtArgs(e.to_string()))?;
         let new_state = PoolState {
             id: txid,
             nonce: last_state

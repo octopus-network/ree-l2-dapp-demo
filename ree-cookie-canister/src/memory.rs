@@ -34,11 +34,6 @@ thread_local! {
             MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)),
         )
     );
-    // pub static GAMER: RefCell<StableBTreeMap<AddressStr, Gamer, Memory>> = RefCell::new(
-    //     StableBTreeMap::init(
-    //         MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)),
-    //     )
-    // );
 
     pub static ADDRESS_PRINCIPLE_MAP: RefCell<StableBTreeMap<Principal, AddressStr, Memory>> = RefCell::new(
         StableBTreeMap::init(

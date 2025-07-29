@@ -248,7 +248,6 @@ impl PoolManager {
     ) {
 
         let key_path = self.get_rune_pool_path();
-        // let (_pubkey, _tweaked_pubkey, address) = request_address(key_path).await?;
 
         self.rune_pool = Some(Pool::init(
             self.path_prefix.clone(), 

@@ -12,7 +12,7 @@ use crate::{
     ,
     log,
     memory::{mutate_state, read_state, set_state, ADDRESS_PRINCIPLE_MAP, BLOCKS, TX_RECORDS},
-    pool::{Pool, PoolState},
+    pool::Pool,
     state::ExchangeState,
     utils::{request_address, AddLiquidityInfo},
     AddressStr, ExchangeError, GameId, DUST_BTC_VALUE,
@@ -79,110 +79,6 @@ pub async fn get_game_pool_address(game_id: GameId) -> AddressStr {
     }
 }
 
-// #[update]
-// pub async fn init_game_pool(game_id: GameId, btc_utxo: Utxo) {
-
-//     let key_path = read_state(|s| {
-//         s.games
-//             .get(&game_id)
-//             .expect("Game Not Found")
-//             .key_path()
-//     });
-
-//     let (pubkey, tweaked_pubkey, address) = request_address(key_path.clone())
-//     .await
-//     .expect("Failed to request address");
-
-//     mutate_state(|s| {
-//         let game = s.games.get_mut(&game_id).expect("Game not found");
-//         game.pool = Some(Pool::init(
-//             key_path.clone(),
-//             key_path.clone(),
-//             pubkey,
-//             address.to_string(),
-//             "".to_string(),
-//             btc_utxo.clone(),
-//         ));
-//     });
-// }
-
-// #[update]
-// pub async fn add_new_btc_pool(game_id: GameId, btc_utxo: Utxo) -> Result<(), String> {
-//     let pm = read_state(|s| {
-//         s.games
-//             .get(&game_id)
-//             .expect("Game Not Found")
-//             .pool_manager
-//             .clone()
-//     });
-//     let (pk, _tpk, addr, next_path) = pm
-//         .next_new_btc_pool_address()
-//         .await
-//         .map_err(|e| e.to_string())?;
-
-//     mutate_state(|s| {
-//         let game = s.games.get_mut(&game_id).expect("Game not found");
-//         let mut btc_utxo = btc_utxo.clone();
-//         let mut coin_balances = CoinBalances::new();
-//         coin_balances.add_coin(&CoinBalance {
-//             id: CoinId::btc(),
-//             value: btc_utxo.sats as u128,
-//         });
-
-//         btc_utxo.coins = coin_balances;
-
-//         game.pool_manager
-//             .add_new_btc_pool(pk, addr, next_path, btc_utxo.clone())
-//             .expect("Failed to add new BTC pool");
-//         if matches!(game.game_status, GameStatus::Initializing) {
-//             game.game_status = game.game_status.init();
-//         }
-//     });
-
-//     Ok(())
-// }
-
-// #[update]
-// pub async fn init_key() -> Result<String, ExchangeError> {
-//     let (current_address, key_name) = read_state(|s| (s.address.clone(), s.key_path.clone()));
-//     if let Some(address) = current_address {
-//         return Ok(address);
-//     } else {
-//         let untweaked_pubkey = request_schnorr_key("key_1", key_name.into_bytes()).await?;
-//         let tweaked_pubkey = tweak_pubkey_with_empty(untweaked_pubkey.clone());
-//         cfg_if::cfg_if! {
-//         if #[cfg(feature = "testnet")] {
-//             let address = Address::p2tr_tweaked(tweaked_pubkey, Network::Testnet4);
-//         } else {
-//             let address = Address::p2tr_tweaked(tweaked_pubkey, Network::Bitcoin);
-//         }
-//         }
-//         mutate_state(|es| {
-//             es.key = Some(untweaked_pubkey.clone());
-//             es.address = Some(address.to_string());
-//             es.game.game_status = es.game.game_status.finish_init_key();
-//         });
-//         Ok(address.to_string())
-//     }
-// }
-
-// #[update]
-// pub async fn init_utxo(utxo: Utxo) -> Result<(), ExchangeError> {
-//     mutate_state(|es| {
-//         es.rune_id = utxo.maybe_rune.clone().map(|rune| rune.id);
-//         es.states.push(PoolState {
-//             id: None,
-//             nonce: 0,
-//             utxo,
-//             user_action: crate::state::UserAction::Init,
-//         });
-
-//         es.game.game_status = es.game.game_status.finish_init_utxo();
-//     });
-
-//     Ok(())
-// }
-
 #[query]
 fn get_exchange_state() -> ExchangeState {
     read_state(|s| s.clone())
@@ -215,22 +111,6 @@ pub fn claim(game_id: GameId) -> Result<u128, ExchangeError> {
     })
 }
 
-// no permission check
-// #[update]
-// async fn end_game(game_id: usize) {
-//     mutate_state(|es| {
-//         let game = es.games.get_mut(&game_id).expect("Game not found");
-
-//         assert_eq!(
-//             game.creator.to_text(),
-//             ic_cdk::caller().to_text(),
-//             "Only game creator can end the game"
-//         );
-
-//         game.end();
-//     })
-// }
-
 #[update]
 async fn etch_rune(game_id: GameId, rune_name: String) -> std::result::Result<String, String> {
     let game = read_state(|s| {
@@ -250,16 +130,6 @@ async fn etch_rune(game_id: GameId, rune_name: String) -> std::result::Result<St
     let (_pubkey, _tweaked_pubkey, pool_address) = request_address(key_path)
         .await
         .expect("Failed to request address");
-    // let pool_address = game.pool.as_ref()
-    //     .ok_or_else(|| format!("Game with ID {} has no pool", game_id))?
-    //     .address
-    //     .clone();
-
-    // let pool_address = game
-    //     .pool_manager
-    //     .get_rune_pool_address()
-    //     .await
-    //     .map_err(|e| format!("Failed to get rune pool address: {}", e))?;
 
     let premine_amount = game.premine_rune_amount();
     let args = EtchingArgs {
@@ -322,13 +192,6 @@ pub async fn finalize_etch(game_id: GameId) -> Result<String, String> {
 
     assert!(result.confirmations >= 1, "Etching not confirmed yet");
 
-    // // let path = game.pool_manager.get_rune_pool_path();
-    // let path = game.pool.as_ref().ok_or(ExchangeError::PoolNotFound(game.game_name.clone()))?
-    //     .key_derivation_path.clone();
-    // let (pk, _tweaked_pubkey, address) = request_address(path)
-    //     .await
-    //     .map_err(|e| format!("Failed to request address: {}", e))?;
-
     let key_path = game.key_path();
     let (pubkey, _tweaked_pubkey, pool_address) = request_address(key_path.clone())
         .await
@@ -364,16 +227,6 @@ pub async fn finalize_etch(game_id: GameId) -> Result<String, String> {
                 sats: DUST_BTC_VALUE,
             },
         ));
-        // game.pool_manager.add_rune_pool(
-        //     pk,
-        //     address,
-        //     Utxo {
-        //         txid: Txid::from_str(&reveal_tx_id).expect("Failed to parse reveal tx id"),
-        //         vout: 1,
-        //         coins: coin_balances,
-        //         sats: MIN_BTC_VALUE,
-        //     },
-        // );
         game.game_status = game.game_status.finish_etching();
     });
 
@@ -392,31 +245,7 @@ pub fn query_add_liquidity_info(game_id: GameId) -> AddLiquidityInfo {
     })
 }
 
-#[update]
-pub async fn etching_test() -> Result<String, String> {
-    etching(EtchingArgs {
-        rune_name: "TEST•REE•TEST•TEST".to_string(),
-        divisibility: Some(2),
-        premine: Some(1000000),
-        logo: None,
-        symbol: None,
-        terms: None,
-        turbo: false,
-        premine_receiver: "tb1pg9yzn8uxgwegrd6ddjtfj9fswzyhsxtade7ysk4cn7unj2jvnvpqq208vx"
-            .to_string(),
-    })
-    .await
-}
-
 /// REE API
-
-#[query]
-pub fn get_pool_states() -> Vec<PoolState> {
-    return vec![];
-
-    // read_state(|s| s.states.clone())
-}
-
 #[query]
 pub fn get_pool_info(args: GetPoolInfoArgs) -> GetPoolInfoResponse {
     let pool_address = args.pool_address;
@@ -450,53 +279,8 @@ pub fn get_pool_info(args: GetPoolInfoArgs) -> GetPoolInfoResponse {
     })
 }
 
-//     read_state(|es| match es.last_state() {
-//         Ok(last_state) => pool_address
-//             .eq(&es.address.clone().unwrap())
-//             .then_some(PoolInfo {
-//                 key: es.key.clone().unwrap(),
-//                 key_derivation_path: vec![es.key_path.clone().into_bytes()],
-//                 name: es.rune_name.clone(),
-//                 address: es.address.clone().unwrap(),
-//                 nonce: last_state.nonce,
-//                 coin_reserved: es
-//                     .rune_id
-//                     .map(|rune_id| {
-//                         vec![CoinBalance {
-//                             id: rune_id,
-//                             value: last_state.utxo.maybe_rune.unwrap().value,
-//                         }]
-//                     })
-//                     .unwrap_or(vec![]),
-//                 btc_reserved: last_state.btc_balance(),
-//                 utxos: vec![last_state.utxo],
-//                 attributes: "".to_string(),
-//             }),
-//         Err(_) => {
-//             return None;
-//         }
-//     })
-// }
-
-// #[query]
-// pub fn get_game_and_gamer_infos(gamer_id: crate::AddressStr) -> GameAndGamer {
-//     read_state(|s| GameAndGamer {
-//         is_end: s.game.is_end,
-//         gamer_register_fee: s.game.gamer_register_fee,
-//         claim_cooling_down: s.game.claim_cooling_down,
-//         cookie_amount_per_claim: s.game.cookie_amount_per_claim,
-//         claimed_cookies: s.game.claimed_cookies,
-//         gamer: GAMER.with_borrow(|g| g.get(&gamer_id)),
-//     })
-// }
-
 #[query]
 pub fn get_pool_list() -> GetPoolListResponse {
-    // let address = read_state(|s| s.address.clone().unwrap());
-    // vec![PoolBasic {
-    //     name: "REE_COOKIE".to_string(),
-    //     address,
-    // }]
 
     read_state(|es| {
         let mut pool_list = vec![];
@@ -781,12 +565,6 @@ pub fn new_block(args: NewBlockArgs) -> NewBlockResponse {
                                             .expect("Failed to finalize tx")
                                     });
                                 }
-                                // if pool.eq(&exchange_pool_address) {
-                                //     mutate_state(|s| {
-                                //         s.finalize(txid.clone()).map_err(|e| e.to_string())
-                                //     })
-                                //     .unwrap();
-                                // }
                             });
                         }
                     })
