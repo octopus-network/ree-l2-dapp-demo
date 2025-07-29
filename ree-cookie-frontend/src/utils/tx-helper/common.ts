@@ -1,16 +1,17 @@
 import { AddressType, Coin, TransactionInfo, UnspentOutput, TransactionType } from "../../types";
 
 import { getCoinSymbol } from "../common";
-import { Runestone, Edict } from "../runelib";
 import { } from "../../types";
 import { getTxInfo, getRawTx } from "../chain-api";
 import { getAddressType } from "../address";
 import { formatNumber } from "../format-number";
+// import { Edict, Runestone } from "utils/runelib";
+import { Edict, Runestone } from "runelib";
 
 export async function getTxScript(outpoint: string) {
   const [txid, vout] = outpoint.split(":");
   const voutNumber = Number(vout);
-  const { vout: outputs } = await getTxInfo(txid);
+  const { vout: outputs } = await getTxInfo(txid!);
 
   const { scriptpubkey, scriptpubkey_address } = outputs[voutNumber];
   return {
@@ -46,7 +47,7 @@ export async function getUtxoByOutpoint(
     return;
   }
 
-  const { scriptpubkey, scriptpubkey_address, value } = outputs[voutNumber];
+  const { scriptpubkey, scriptpubkey_address, value } = outputs[voutNumber]!;
 
   const opReturn = outputs.find(
     ({ scriptpubkey_type }) => scriptpubkey_type === "op_return"
@@ -128,7 +129,7 @@ export function selectRuneUtxos(
     }
 
     if (totalAmount < targetAmount) {
-      totalAmount += BigInt(utxo.runes[containsTargetCoinUtxoIdx].amount);
+      totalAmount += BigInt(utxo.runes[containsTargetCoinUtxoIdx]!.amount);
       if (
         selectedUtxos.findIndex(
           (item) => item.txid === utxo.txid && item.vout === utxo.vout

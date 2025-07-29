@@ -1,15 +1,36 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { nodePolyfills } from 'vite-plugin-node-polyfills'
-import path from "path";
+/// <reference types="vitest/config" />
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), nodePolyfills()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@assets': path.resolve(__dirname, './src/assets')
-    }
-  }
-})
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import {defineConfig} from 'vite'
+import tsconfigPaths from 'vite-tsconfig-paths'
+// import { nodePolyfills } from 'vite-plugin-node-polyfills'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
+
+
+export default defineConfig(() => ({
+	define: {
+		'process.env': {},
+		"global": "window",
+	},
+	plugins: [tsconfigPaths(), react(), tailwindcss(), nodePolyfills()],
+	test: {
+		bail: 1,
+		clearMocks: true,
+		coverage: {
+			enabled: true,
+			exclude: ['src/main.tsx', 'src/mocks/browser.ts'],
+			include: ['src/**/*'],
+			reporter: ['text', 'lcov'],
+			reportsDirectory: 'coverage',
+			thresholds: {
+				'100': true
+			}
+		},
+		css: false,
+		environment: 'happy-dom',
+		globals: true,
+		include: ['src/**/*.test.ts?(x)'],
+		setupFiles: 'src/test-setup.ts'
+	}
+}))

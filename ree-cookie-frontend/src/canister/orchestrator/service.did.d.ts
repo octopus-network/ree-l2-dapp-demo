@@ -41,12 +41,6 @@ export interface EstimateMinTxFeeArgs {
   'pool_address' : Array<string>,
   'output_types' : Array<TxOutputType>,
 }
-export interface ExchangeMetadata {
-  'principal' : Principal,
-  'exchange_id' : string,
-  'name' : string,
-  'description' : string,
-}
 export interface ExchangePool {
   'exchange_id' : string,
   'pool_address' : string,
@@ -57,16 +51,8 @@ export type ExchangeStatus = { 'Active' : null } |
 export interface ExchangeView {
   'status' : ExchangeStatus,
   'exchange_id' : string,
-  'name' : string,
   'canister_id' : Principal,
-  'description' : string,
-}
-export interface ExecuteTxArgs {
-  'zero_confirmed_tx_queue_length' : number,
-  'txid' : string,
-  'intention_set' : IntentionSet,
-  'intention_index' : number,
-  'psbt_hex' : string,
+  'client_canisters' : Array<Principal>,
 }
 export interface ExecutionStepLogView {
   'result' : Result_3,
@@ -84,18 +70,19 @@ export interface FromCanisterRecord {
 export interface FromUserRecord { 'user_id' : Principal }
 export type GetFailedInvokeLogArgs = { 'All' : null } |
   { 'ByTxid' : string } |
-  { 'ByAddress' : string };
+  { 'ByAddress' : string } |
+  { 'BySecondsPassed' : bigint };
 export interface InputCoin { 'coin' : CoinBalance, 'from' : string }
 export interface Intention {
   'input_coins' : Array<InputCoin>,
   'output_coins' : Array<OutputCoin>,
   'action' : string,
   'exchange_id' : string,
-  'pool_utxo_spend' : Array<string>,
+  'pool_utxo_spent' : Array<string>,
   'action_params' : string,
   'nonce' : bigint,
-  'pool_utxo_receive' : Array<string>,
   'pool_address' : string,
+  'pool_utxo_received' : Array<Utxo>,
 }
 export interface IntentionSet {
   'tx_fee_in_sats' : bigint,
@@ -104,6 +91,7 @@ export interface IntentionSet {
 }
 export interface InvokeArgs {
   'intention_set' : IntentionSet,
+  'initiator_utxo_proof' : Uint8Array | number[],
   'psbt_hex' : string,
 }
 export interface InvokeLogView {
@@ -134,6 +122,7 @@ export interface NewBlockDetectedArgs {
   'block_height' : number,
 }
 export interface OrchestratorSettings {
+  'exchange_registry_principal' : Principal,
   'max_input_count_of_psbt' : number,
   'min_tx_confirmations' : number,
   'mempool_connector_principal' : Principal,
@@ -149,6 +138,7 @@ export interface OrchestratorStatus {
   'pending_tx_count' : bigint,
   'mempool_tx_fee_rate' : MempoolTxFeeRateView,
   'invoke_paused' : boolean,
+  'utxo_proof_verification_status' : UtxoProofVerificationStatus,
 }
 export interface OutpointWithValue {
   'maybe_rune' : [] | [CoinBalance],
@@ -163,6 +153,11 @@ export interface ReceivedBlockView {
   'txids' : Array<string>,
   'block_time' : string,
   'received_time' : string,
+}
+export interface RegisterExchangeArgs {
+  'exchange_canister' : Principal,
+  'exchange_id' : string,
+  'client_canisters' : Array<Principal>,
 }
 export interface RejectedTxView {
   'rollback_results' : Array<string>,
@@ -203,6 +198,15 @@ export type TxOutputType = { 'P2WPKH' : null } |
 export type TxStatus = { 'Confirmed' : number } |
   { 'Rejected' : string } |
   { 'Pending' : null };
+export interface Utxo {
+  'coins' : Array<CoinBalance>,
+  'sats' : bigint,
+  'txid' : string,
+  'vout' : number,
+}
+export type UtxoProofVerificationStatus = { 'Enabled' : null } |
+  { 'Disabled' : null } |
+  { 'AllowEmpty' : null };
 export interface _SERVICE {
   'clear_failed_invoke_logs' : ActorMethod<
     [[] | [bigint], Array<string>],
@@ -211,15 +215,10 @@ export interface _SERVICE {
   'estimate_min_tx_fee' : ActorMethod<[EstimateMinTxFeeArgs], Result_1>,
   'get_canister_info' : ActorMethod<[bigint], Result_2>,
   'get_exchange_pools' : ActorMethod<[], Array<ExchangePool>>,
-  'get_execute_tx_args_of_failed_invoke' : ActorMethod<
-    [string, bigint],
-    [] | [ExecuteTxArgs]
-  >,
   'get_failed_invoke_logs' : ActorMethod<
     [GetFailedInvokeLogArgs],
     Array<[string, InvokeLogView]>
   >,
-  'get_invoke_args_of_failed_invoke' : ActorMethod<[string], [] | [InvokeArgs]>,
   'get_last_sent_txs' : ActorMethod<
     [[] | [number]],
     Array<[string, string, [] | [number]]>
@@ -251,10 +250,7 @@ export interface _SERVICE {
     [string, number],
     Result_4
   >,
-  'register_exchange' : ActorMethod<[ExchangeMetadata], Result>,
-  'reject_tx' : ActorMethod<[string, string], Result>,
-  'rollback_tx' : ActorMethod<[string], Result_4>,
-  'rollback_tx_in_exchange' : ActorMethod<[string, string], Result>,
+  'register_exchange' : ActorMethod<[RegisterExchangeArgs], Result>,
   'save_included_block_for_tx' : ActorMethod<
     [SaveIncludedBlockForTxArgs],
     Result
@@ -266,6 +262,10 @@ export interface _SERVICE {
   'set_min_btc_amount_for_utxo' : ActorMethod<[bigint], Result>,
   'set_min_tx_confirmations' : ActorMethod<[number], Result>,
   'set_tx_fee_per_vbyte' : ActorMethod<[SetTxFeePerVbyteArgs], Result>,
+  'update_bitcoin_subnet_certificate' : ActorMethod<
+    [Uint8Array | number[]],
+    undefined
+  >,
   'version' : ActorMethod<[], string>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;

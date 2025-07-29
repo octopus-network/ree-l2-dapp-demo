@@ -1,5 +1,5 @@
 import { Edict, RuneId, Runestone, none } from "runelib";
-import { ocActor } from "../../canister/orchestrator/actor";
+import { estimate_min_tx_fee, ocActor } from "../../canister/orchestrator/actor";
 import { BITCOIN, UTXO_DUST } from "../../constants";
 import { AddressType, InputCoin, OutputCoin, ToSignInput, TxOutputType, UnspentOutput } from "../../types";
 import { addressTypeToString, getAddressType } from "../address";
@@ -21,8 +21,8 @@ export async function registerTx({
     feeRate: bigint,
     registerFee: bigint
 }) {
-    let userBtcAmount = userBtcUtxos.reduce((acc, utxo) => acc + BigInt(utxo.satoshis), BigInt(0))
-    console.log({ userBtcAmount })
+    // let userBtcAmount = userBtcUtxos.reduce((acc, utxo) => acc + BigInt(utxo.satoshis), BigInt(0))
+    // console.log({ userBtcAmount })
     console.log({ poolAddress })
     console.log({ paymentAddress })
     const tx = new Transaction();
@@ -41,12 +41,13 @@ export async function registerTx({
     )
 
     // input 1-n user utxo
-    userBtcUtxos.forEach(utxo => {
-        tx.addInput(utxo)
-        inputTypes.push(
-            addressTypeToString(getAddressType(utxo.address))
-        )
-    })
+
+    // userBtcUtxos.forEach(utxo => {
+    //     tx.addInput(utxo)
+    //     inputTypes.push(
+    //         addressTypeToString(getAddressType(utxo.address))
+    //     )
+    // })
 
     // add register fee to pool address
 
@@ -56,46 +57,43 @@ export async function registerTx({
         addressTypeToString(getAddressType(poolAddress))
     )
 
-    // edict && op return
-    let runeId = poolBtcUtxo.runes[0].id
-    const [runeBlock, runeIdx] = runeId.split(":");
-    let rune_amount = poolBtcUtxo.runes[0].amount
-    const edicts = [
-        new Edict(
-            new RuneId(Number(runeBlock), Number(runeIdx)),
-            BigInt(rune_amount),
-            0
-        )
-    ]
-
-    const runestone = new Runestone(edicts, none(), none(), none());
-    console.log({ runestone })
-
-    const opReturnScript = runestone.encipher();
-
-    // OP_RETURN
-    tx.addScriptOutput(opReturnScript, BigInt(0));
-
-    // add change utxo
+    // Output 1: change user utxo
     outputTypes.push(
         addressTypeToString(getAddressType(paymentAddress)),
     )
 
-    let fee = await ocActor.estimate_min_tx_fee({
-        'input_types': inputTypes,
-        'pool_address': [poolAddress],
-        'output_types': outputTypes,
-    }).then((res: { 'Ok': bigint } | { 'Err': string }) => {
-        if ('Err' in res) {
-            throw new Error(res.Err);
-        }
-        return res.Ok
-    }).catch((err) => {
-        console.log("invoke error", err);
-        throw err;
-    });
+    let userBtcAmount = BigInt(0)
+	let fee = BigInt(0)
+    	for (let i = 0; i < userBtcUtxos.length && i < 10; i++) {
+		const utxo = userBtcUtxos[i]!
+		tx.addInput(utxo)
+		inputTypes.push(addressTypeToString(getAddressType(utxo.address)))
+		userBtcAmount += BigInt(utxo.satoshis)
+		fee = await estimate_min_tx_fee(inputTypes, [poolAddress], outputTypes)
+		fee = fee + fee
+		if (userBtcAmount >= fee) break
+	}
+	if (userBtcAmount < fee) {
+		throw new Error('Insufficient UTXO(s)')
+	}
 
-    fee = fee + fee + fee;
+    console.log({tx})
+
+    // let fee = await ocActor.estimate_min_tx_fee({
+    //     'input_types': inputTypes,
+    //     'pool_address': [poolAddress],
+    //     'output_types': outputTypes,
+    // }).then((res: { 'Ok': bigint } | { 'Err': string }) => {
+    //     if ('Err' in res) {
+    //         throw new Error(res.Err);
+    //     }
+    //     return res.Ok
+    // }).catch((err) => {
+    //     console.log("invoke error", err);
+    //     throw err;
+    // });
+
+    // fee = fee + fee + fee;
     // let fee = await Orchestrator.getEstimateMinTxFee({
     //     input_types: inputTypes,
     //     pool_address: poolAddress,
@@ -143,11 +141,11 @@ export async function registerTx({
     for (let i = 0; i < toSignInputs.length; i++) {
         const toSignInput = toSignInputs[i];
 
-        const toSignIndex = toSignInput.index;
+        const toSignIndex = toSignInput!.index;
         const input = inputs[toSignIndex];
-        const inputAddress = input.utxo.address;
+        const inputAddress = input!.utxo.address;
         if (!inputAddress) continue;
-        const redeemScript = psbt.data.inputs[toSignIndex].redeemScript;
+        const redeemScript = psbt.data.inputs[toSignIndex]!.redeemScript;
         const addressType = getAddressType(inputAddress);
 
         if (redeemScript && addressType === AddressType.P2SH_P2WPKH) {

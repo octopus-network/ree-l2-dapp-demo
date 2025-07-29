@@ -10,7 +10,7 @@ export const WALLETS: Record<
 > = {
   [UNISAT]: {
     name: "Unisat",
-    icon: "/unisat.png",
+    icon: "/icons/unisat.png",
     url: "https://unisat.io/download",
   },
   // [MAGIC_EDEN]: {
