@@ -23,6 +23,12 @@ impl Storable for ExchangeState {
         bincode::deserialize(bytes.as_ref()).unwrap()
     }
 
+     fn into_bytes(self) -> Vec<u8> {
+        let mut bytes = vec![];
+        bincode::serialize_into(&mut bytes, &self).unwrap();
+        bytes
+    }
+
     const BOUND: Bound = Bound::Unbounded;
 }
 
@@ -38,13 +44,13 @@ impl ExchangeState {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, CandidType)]
-pub enum UserAction {
-    Init,
-    AddLiquidity,
-    Register(AddressStr),
-    Withdraw(AddressStr),
-}
+// #[derive(Deserialize, Serialize, Clone, Debug, CandidType)]
+// pub enum UserAction {
+//     Init,
+//     AddLiquidity,
+//     Register(AddressStr),
+//     Withdraw(AddressStr),
+// }
 
 #[test]
 pub fn test() {

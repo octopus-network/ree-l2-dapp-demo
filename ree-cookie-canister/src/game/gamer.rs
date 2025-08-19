@@ -24,6 +24,12 @@ impl Storable for Gamer {
         bincode::deserialize(bytes.as_ref()).unwrap()
     }
 
+    fn into_bytes(self) -> Vec<u8> {
+        let mut bytes = vec![];
+        bincode::serialize_into(&mut bytes, &self).unwrap();
+        bytes
+    }
+
     const BOUND: Bound = Bound::Unbounded;
 }
 

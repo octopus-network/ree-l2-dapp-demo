@@ -1,13 +1,21 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use crate::pool::{Pool, PoolState, UserAction};
+use crate::exchange::exchange::CookiePools;
+use crate::exchange::{CookiePoolState, UserAction};
+use crate::pool::{
+    Pool,
+    PoolState,
+    // UserAction
+};
 use crate::*;
 use crate::{utils::get_chain_second_timestamp, AddressStr, ExchangeError, Seconds};
 use ic_cdk::api::management_canister::bitcoin::Satoshi;
 use ic_stable_structures::storable::Bound;
 use ic_stable_structures::Storable;
-use ree_types::{CoinId, InputCoin, OutputCoin};
+use ree_exchange_sdk::prelude::PoolStorageAccess;
+use ree_exchange_sdk::types::{CoinId, InputCoin, OutputCoin};
+// use ree_exchange_sdk::{CoinId, InputCoin, OutputCoin};
 use serde::{Deserialize, Serialize};
 
 use super::gamer::Gamer;
@@ -23,7 +31,7 @@ pub struct Game {
     pub creator: Principal,
     pub creator_address: AddressStr,
     // pub pool_manager: PoolManager,
-    pub pool: Option<Pool>,
+    // pub pool: Option<Pool>,
     pub rune_premine_amount: u128,
     pub rune_info: Option<RuneInfo>,
     pub claimed_cookies: u128,
@@ -31,7 +39,6 @@ pub struct Game {
     #[serde(default)]
     pub etch_rune_commit_tx: String,
 }
-
 
 #[derive(CandidType, Deserialize, Serialize, Clone)]
 pub struct RuneInfo {
@@ -48,6 +55,12 @@ impl Storable for Game {
         bincode::deserialize(bytes.as_ref()).unwrap()
     }
 
+    fn into_bytes(self) -> Vec<u8> {
+        let mut bytes = vec![];
+        bincode::serialize_into(&mut bytes, &self).unwrap();
+        bytes
+    }
+
     const BOUND: Bound = Bound::Unbounded;
 }
 
@@ -62,8 +75,6 @@ impl Game {
             game_status: GameStatus::Etching,
             creator: creator,
             creator_address: args.create_address.clone(),
-            pool: None,
-            // pool_manager: PoolManager::new(game_id.to_string()),
             rune_info: None,
             rune_premine_amount: args.rune_premine_amount,
             claimed_cookies: 0,
@@ -166,63 +177,41 @@ impl Game {
 
         if !gamer.is_withdrawn {
             gamer.is_withdrawn = true;
-            // gamer.withdrawn_at = Some(get_chain_ms_timestamp());
-            // gamer.withdrawn_txid = Some(txid);
-            let cookies = gamer.cookies;
-
-            Ok(cookies)
+            Ok(gamer.cookies)
         } else {
             Err(ExchangeError::GamerWithdrawRepeatedly(gamer_id))
         }
-    }
-
-    pub fn finalize_tx(&mut self, txid: Txid) -> Result<()> {
-        self.pool.as_mut().unwrap().finalize(txid)?;
-    
-        Ok(())
-    }
-
-    pub fn rollback_tx(&mut self, txid: Txid) -> Result<()> {
-        let rollback_state = self.pool.as_mut().unwrap().rollback(txid)?;
-        for state in rollback_state {
-            match state.user_action {
-                UserAction::Register(address) => {
-                    self.gamers.remove(&address);
-                }
-                UserAction::Withdraw(address) => {
-                    self.gamers
-                        .get_mut(&address)
-                        .ok_or(ExchangeError::GamerNotFound(address.clone()))?
-                        .is_withdrawn = false;
-                }
-                _ => {}
-            }
-        }
-        Ok(())
     }
 }
 
 impl Game {
     pub fn validate_add_liquidity(
         &self,
+        pool_address: AddressStr,
         txid: Txid,
         nonce: u64,
         pool_utxo_spent: Vec<String>,
         pool_utxo_received: Vec<Utxo>,
         input_coins: Vec<InputCoin>,
         output_coins: Vec<OutputCoin>,
-    ) -> Result<(PoolState, (String, Utxo))> {
+    ) -> Result<(CookiePoolState, (Vec<Vec<u8>>, Utxo))> {
         let rune_info = self
             .rune_info
             .as_ref()
             .ok_or(ExchangeError::RuneNotFound(self.game_name.clone()))?;
 
-        let pool = self
-            .pool
-            .as_ref()
-            .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?;
+        let btc_pool = CookiePools::get(&pool_address)
+            .ok_or(ExchangeError::PoolNotFound(pool_address.clone()))?;
 
-        let last_state = pool.last_state().ok_or(ExchangeError::LastStateNotFound)?;
+        // let pool = self
+        //     .pool
+        //     .as_ref()
+        //     .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?;
+        let last_state = btc_pool.states().last().ok_or(ExchangeError::InvalidState(
+            "Pool has no states".to_string(),
+        ))?;
+
+        // let last_state = pool.last_state().ok_or(ExchangeError::LastStateNotFound)?;
 
         let pool_expected_spend_rune = self.calculate_add_liquidity_rune_amount();
         let pool_expected_spend_btc = self.gamers.len() as u128 * self.gamer_register_fee as u128;
@@ -273,8 +262,18 @@ impl Game {
             ExchangeError::InvalidSignPsbtArgs("pool_utxo_receive not found".to_string()),
         )?;
 
-        let new_state = PoolState {
-            id: txid,
+        // let new_state = PoolState {
+        //     id: txid,
+        //     nonce: last_state
+        //         .nonce
+        //         .checked_add(1)
+        //         .ok_or(ExchangeError::Overflow)?,
+        //     utxo: new_utxo,
+        //     user_action: UserAction::AddLiquidity,
+        // };
+
+        let new_state = CookiePoolState {
+            txid: txid,
             nonce: last_state
                 .nonce
                 .checked_add(1)
@@ -285,12 +284,16 @@ impl Game {
 
         return Ok((
             new_state,
-            (pool.key_derivation_path.clone(), last_state.utxo.clone()),
+            (
+                btc_pool.metadata().key_derivation_path.clone(),
+                last_state.utxo.clone(),
+            ),
         ));
     }
 
     pub fn validate_register(
         &self,
+        pool_address: AddressStr,
         txid: Txid,
         nonce: u64,
         pool_utxo_spent: Vec<String>,
@@ -298,7 +301,7 @@ impl Game {
         input_coins: Vec<InputCoin>,
         output_coins: Vec<OutputCoin>,
         address: AddressStr,
-    ) -> Result<(PoolState, (String, Utxo))> {
+    ) -> Result<(CookiePoolState, (Vec<Vec<u8>>, Utxo))> {
         if !matches!(self.game_status, GameStatus::Playing) {
             return Err(ExchangeError::GameStatusNotMatch(
                 self.game_status.clone(),
@@ -322,14 +325,21 @@ impl Game {
             )))?;
 
         // the pool_utxo_spend should be equal to the utxo of the last state
-        let btc_pool = self
-            .pool
-            .as_ref()
-            .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?;
+        // let btc_pool = self
+        //     .pool
+        //     .as_ref()
+        //     .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?;
 
-        let last_state = btc_pool
-            .last_state()
-            .ok_or(ExchangeError::LastStateNotFound)?;
+        let btc_pool = CookiePools::get(&pool_address)
+            .ok_or(ExchangeError::PoolNotFound(pool_address.clone()))?;
+
+        let last_state = btc_pool.states().last().ok_or(ExchangeError::InvalidState(
+            "Pool has no states".to_string(),
+        ))?;
+
+        // let last_state = btc_pool
+        //     .last_state()
+        //     .ok_or(ExchangeError::LastStateNotFound)?;
 
         // check nonce matches
         (last_state.nonce == nonce)
@@ -362,20 +372,30 @@ impl Game {
             ExchangeError::InvalidSignPsbtArgs("pool_utxo_receive not found".to_string()),
         )?;
 
-        let new_state = PoolState {
-            id: txid,
+        let new_state = CookiePoolState {
+            txid: txid,
             nonce: last_state
                 .nonce
                 .checked_add(1)
                 .ok_or(ExchangeError::Overflow)?,
             utxo: new_utxo,
-            user_action: UserAction::Register(address.clone()),
+            user_action: UserAction::Register(self.game_id.clone(), address.clone()),
         };
+
+        // let new_state = PoolState {
+        //     id: txid,
+        //     nonce: last_state
+        //         .nonce
+        //         .checked_add(1)
+        //         .ok_or(ExchangeError::Overflow)?,
+        //     utxo: new_utxo,
+        //     user_action: UserAction::Register(address.clone()),
+        // };
 
         Ok((
             new_state,
             (
-                btc_pool.key_derivation_path.clone(),
+                btc_pool.metadata().key_derivation_path.clone(),
                 last_state.utxo.clone(),
             ),
         ))
@@ -383,6 +403,7 @@ impl Game {
 
     pub fn validate_withdraw(
         &self,
+        pool_address: AddressStr,
         txid: Txid,
         nonce: u64,
         pool_utxo_spend: Vec<String>,
@@ -390,7 +411,7 @@ impl Game {
         input_coins: Vec<InputCoin>,
         output_coins: Vec<OutputCoin>,
         initiator_address: AddressStr,
-    ) -> Result<(PoolState, (String, Utxo))> {
+    ) -> Result<(CookiePoolState, (Vec<Vec<u8>>, Utxo))> {
         assert!(
             matches!(self.game_status, GameStatus::Withdrawing),
             "GameStatus should be Withdrawing, but got: {:?}",
@@ -402,14 +423,21 @@ impl Game {
             .as_ref()
             .ok_or(ExchangeError::RuneNotFound(self.game_name.clone()))?;
 
-        let rune_pool = self
-            .pool
-            .as_ref()
-            .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?;
+        // let rune_pool = self
+        //     .pool
+        //     .as_ref()
+        //     .ok_or(ExchangeError::PoolNotFound(self.game_name.clone()))?;
 
-        let last_state = rune_pool
-            .last_state()
-            .ok_or(ExchangeError::LastStateNotFound)?;
+        // let last_state = rune_pool
+        //     .last_state()
+        //     .ok_or(ExchangeError::LastStateNotFound)?;
+
+        let btc_pool = CookiePools::get(&pool_address)
+            .ok_or(ExchangeError::PoolNotFound(pool_address.clone()))?;
+
+        let last_state = btc_pool.states().last().ok_or(ExchangeError::InvalidState(
+            "Pool has no states".to_string(),
+        ))?;
 
         let gamer = self
             .gamers
@@ -449,20 +477,30 @@ impl Game {
             ExchangeError::InvalidSignPsbtArgs("pool_utxo_receive not found".to_string()),
         )?;
 
-        let new_state = PoolState {
-            id: txid,
+        // let new_state = PoolState {
+        //     id: txid,
+        //     nonce: last_state
+        //         .nonce
+        //         .checked_add(1)
+        //         .ok_or(ExchangeError::Overflow)?,
+        //     utxo: new_utxo,
+        //     user_action: UserAction::AddLiquidity,
+        // };
+
+        let new_state = CookiePoolState {
+            txid: txid,
             nonce: last_state
                 .nonce
                 .checked_add(1)
                 .ok_or(ExchangeError::Overflow)?,
             utxo: new_utxo,
-            user_action: UserAction::AddLiquidity,
+            user_action: UserAction::Withdraw(self.game_id.clone(), initiator_address.clone()),
         };
 
         return Ok((
             new_state,
             (
-                rune_pool.key_derivation_path.clone(),
+                btc_pool.metadata().key_derivation_path.clone(),
                 last_state.utxo.clone(),
             ),
         ));

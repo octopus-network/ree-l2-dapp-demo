@@ -1,8 +1,9 @@
 use candid::{CandidType, Nat, Principal};
-use icrc_ledger_client_cdk::{CdkRuntime, ICRC1Client};
+use icrc_ledger_client::ICRC1Client;
+// use icrc_ledger_client_cdk::{CdkRuntime, ICRC1Client};
 use icrc_ledger_types::{
     icrc1::account::Account,
-    icrc2::approve::ApproveArgs,
+    icrc2::approve::{ApproveArgs, ApproveError},
 };
 use serde::{Deserialize, Serialize};
 
@@ -69,35 +70,63 @@ pub async fn get_etching_request(commit_tx: String)-> Option<SendEtchingInfo> {
 }
 
 pub async fn etching(args: EtchingArgs) -> Result<String, String> {
-    let client = ICRC1Client {
-        runtime: CdkRuntime,
-        ledger_canister_id: Principal::from_text(ICP_LEDGER_CANISTER_ID).unwrap(),
-    };
+    // let client = ICRC1Client {
+    //     runtime: CdkRuntime,
+    //     ledger_canister_id: Principal::from_text(ICP_LEDGER_CANISTER_ID).unwrap(),
+    // };
 
     let etching_principal = Principal::from_text(ETCH_CANISTER_ID).map_err(|e| format!("Invalid etching canister ID: {}", e))?;
 
-    client
-        .approve(ApproveArgs {
-            from_subaccount: None,
-            spender: Account {
-                owner: etching_principal,
-                subaccount: None,
-            },
-            amount: Nat::from(100_000_000_u64),
-            expected_allowance: None,
-            expires_at: None,
-            fee: None,
-            memo: None,
-            created_at_time: None,
-        })
-        .await
-        .map_err(|e| format!("Failed to approve etching canister: {:?}", e))
-        .map_err(|e| e)?
-        .map_err(|e| format!("Failed to approve etching canister: {:?}", e))?;
+    let approve_args = ApproveArgs {
+        from_subaccount: None,
+        spender: Account {
+            owner: etching_principal,
+            subaccount: None,
+        },
+        amount: Nat::from(100_000_000_u64), // 1 ICP
+        expected_allowance: None,
+        expires_at: None,
+        fee: None,
+        memo: None,
+        created_at_time: None,
+    };
+    let result: (Result<Nat, ApproveError>,) = ic_cdk::api::call::call(
+        etching_principal,
+        "icrc2_approve",
+        (approve_args,)
+    )
+    .await
+    .map_err(|e| format!("Failed to approve etching canister: {:?}", e))?;
+    result
+        .0
+        .map_err(|e| format!("Failed to approve etching canister: {:?}", e))?;  
+
+    // client
+    //     .approve(ApproveArgs {
+    //         from_subaccount: None,
+    //         spender: Account {
+    //             owner: etching_principal,
+    //             subaccount: None,
+    //         },
+    //         amount: Nat::from(100_000_000_u64),
+    //         expected_allowance: None,
+    //         expires_at: None,
+    //         fee: None,
+    //         memo: None,
+    //         created_at_time: None,
+    //     })
+    //     .await
+    //     .map_err(|e| format!("Failed to approve etching canister: {:?}", e))
+    //     .map_err(|e| e)?
+    //     .map_err(|e| format!("Failed to approve etching canister: {:?}", e))?;
 
     let r: (Result<String, String>,) =
         ic_cdk::api::call::call(etching_principal, "etching", (args,))
             .await
             .expect("Failed to call etch canister");
     r.0
+}
+
+fn untuple<T>(t: (T,)) -> T {
+    t.0
 }

@@ -5,7 +5,8 @@ use ic_stable_structures::{
     memory_manager::{MemoryId, MemoryManager, VirtualMemory},
     Cell, DefaultMemoryImpl, StableBTreeMap,
 };
-use ree_types::{exchange_interfaces::NewBlockInfo, TxRecord, Txid};
+use ree_exchange_sdk::types::{NewBlockInfo, TxRecord, Txid};
+// use ree_exchange_sdk::{exchange_interfaces::NewBlockInfo, TxRecord, Txid};
 
 use crate::{game::{game::Game, gamer::Gamer}, state::ExchangeState, AddressStr};
 
@@ -26,7 +27,8 @@ thread_local! {
         Cell::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(STATE_MEMORY_ID)),
             Option::None
-        ).expect("state memory not initialized")
+        )
+        // .expect("state memory not initialized")
     );
 
     pub static GAMES: RefCell<StableBTreeMap<AddressStr, Game, Memory>> = RefCell::new(

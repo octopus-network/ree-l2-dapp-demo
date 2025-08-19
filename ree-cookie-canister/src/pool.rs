@@ -1,5 +1,10 @@
-use ree_types::{bitcoin::{key::TweakedPublicKey, Address}, exchange_interfaces::PoolInfo};
+// use ree_exchange_sdk::{
+//     bitcoin::{key::TweakedPublicKey, Address},
+//     exchange_interfaces::{PoolBasic, PoolInfo, ReePool},
+// };
 use std::{cmp::max, collections::BTreeMap};
+
+use ree_exchange_sdk::types::{bitcoin::{key::TweakedPublicKey, Address}, exchange_interfaces::PoolInfo};
 
 use crate::{utils::request_address, *};
 
@@ -18,6 +23,44 @@ pub struct Pool {
     pub attributes: String,
 }
 
+// impl ReePool for Pool {
+//     fn get_pool_info(&self) -> PoolInfo {
+//         let last_state = self
+//             .states
+//             .last()
+//             .cloned()
+//             .expect("Pool should have at least one state");
+//         PoolInfo {
+//             key: self.pubkey.clone(),
+//             key_derivation_path: vec![self.key_derivation_path.clone().into_bytes()],
+//             name: self.name.clone(),
+//             address: self.address.clone(),
+//             nonce: self.nonce,
+//             coin_reserved: last_state.utxo.coins.iter().map(|cb| cb.clone()).collect(),
+//             btc_reserved: last_state.btc_balance(),
+//             utxos: vec![last_state.utxo],
+//             attributes: self.attributes.to_string(),
+//         }
+//     }
+
+//     fn get_basic_info(&self) -> ree_types::exchange_interfaces::PoolBasic {
+//         PoolBasic {
+//             name: self.name.clone(),
+//             address: self.address.clone(),
+//         }
+//     }
+
+//     fn finalize(&mut self, txid: Txid) -> std::result::Result<(), String> {
+//         self.finalize(txid)
+//             .map_err(|e| format!("Failed to finalize pool: {}", e))
+//     }
+
+//     fn rollback(&mut self, txid: Txid) -> std::result::Result<(), String> {
+//         self.rollback(txid)
+//             .map_err(|e| format!("Failed to rollback pool: {}", e))
+//     }
+// }
+
 impl Pool {
     pub fn init(
         pool_name: String,
@@ -25,8 +68,8 @@ impl Pool {
         pubkey: Pubkey,
         address: AddressStr,
         attributes: String,
-        utxo: Utxo
-    )->Self {
+        utxo: Utxo,
+    ) -> Self {
         Self {
             key_derivation_path: key_path,
             name: pool_name,
@@ -34,17 +77,14 @@ impl Pool {
             address,
             pending_transaction_counts: 0,
             nonce: 0,
-            states: vec![
-                PoolState {
-                    id: utxo.txid,
-                    nonce: 0,
-                    utxo,
-                    user_action: UserAction::Init,
-                }
-            ],
+            states: vec![PoolState {
+                id: utxo.txid,
+                nonce: 0,
+                utxo,
+                user_action: UserAction::Init,
+            }],
             attributes,
         }
-
     }
 
     pub fn commit(&mut self, new_state: PoolState) {
@@ -53,7 +93,7 @@ impl Pool {
         self.pending_transaction_counts += 1;
     }
 
-     pub(crate) fn finalize(&mut self, txid: Txid) -> Result<()> {
+    pub(crate) fn finalize(&mut self, txid: Txid) -> Result<()> {
         let tx_count_before = self.states.len();
         let idx = self
             .states
@@ -68,7 +108,10 @@ impl Pool {
         self.states.rotate_left(idx);
         self.states.truncate(self.states.len() - idx);
         let tx_count_after = self.states.len();
-        self.pending_transaction_counts -= max(self.pending_transaction_counts, tx_count_after - tx_count_before);
+        self.pending_transaction_counts -= max(
+            self.pending_transaction_counts,
+            tx_count_after - tx_count_before,
+        );
 
         Ok(())
     }
@@ -86,7 +129,10 @@ impl Pool {
 
         let mut rollback_states = vec![];
         while self.states.len() > idx {
-            let state = self.states.pop().ok_or(ExchangeError::InvalidState("No state to pop".to_string()))?;
+            let state = self
+                .states
+                .pop()
+                .ok_or(ExchangeError::InvalidState("No state to pop".to_string()))?;
             rollback_states.push(state);
         }
 
@@ -94,14 +140,11 @@ impl Pool {
     }
 
     pub fn last_state(&self) -> Option<PoolState> {
-        self.states
-            .last()
-            .cloned()
+        self.states.last().cloned()
     }
 }
 
 impl TryFrom<Pool> for PoolInfo {
-
     type Error = ExchangeError;
     fn try_from(pool: Pool) -> std::result::Result<Self, ExchangeError> {
         let last_state = pool
@@ -115,9 +158,7 @@ impl TryFrom<Pool> for PoolInfo {
             name: pool.name,
             address: pool.address,
             nonce: pool.nonce,
-            coin_reserved: last_state
-                .utxo
-                .coins.iter().map(|c| c.clone()).collect(),
+            coin_reserved: last_state.utxo.coins.iter().map(|c| c.clone()).collect(),
             btc_reserved: last_state.btc_balance(),
             utxos: vec![last_state.utxo],
             attributes: pool.attributes,
@@ -157,36 +198,28 @@ pub struct PoolManager {
 impl PoolManager {
     pub const MAX_PENDING_TRANSACTION_COUNTS: usize = 25;
 
-    pub fn new(
-        path_prefix: String,    
-    )->Self{
-        PoolManager { 
-            btc_pools: BTreeMap::new(), 
+    pub fn new(path_prefix: String) -> Self {
+        PoolManager {
+            btc_pools: BTreeMap::new(),
             rune_pool: None,
-            path_prefix, 
+            path_prefix,
         }
     }
 
-    pub async fn try_new(
-        rune_id: String,
-        rune_name: String,
-        rune_utxo: Utxo
-    )->Result<Self>{
+    pub async fn try_new(rune_id: String, rune_name: String, rune_utxo: Utxo) -> Result<Self> {
+        let (pubkey, _tweaked_pubkey, address) = request_address(rune_id.clone()).await?;
 
-        let (pubkey, _tweaked_pubkey, address) = 
-        request_address(rune_id.clone()).await?;
-
-        Ok(PoolManager { 
-            btc_pools: BTreeMap::new(), 
+        Ok(PoolManager {
+            btc_pools: BTreeMap::new(),
             rune_pool: Some(Pool::init(
-                rune_name, 
-                rune_id.clone(), 
-                pubkey, 
-                address.to_string(), 
-                "".to_string(), 
-                rune_utxo)
-            ),
-            path_prefix: rune_id, 
+                rune_name,
+                rune_id.clone(),
+                pubkey,
+                address.to_string(),
+                "".to_string(),
+                rune_utxo,
+            )),
+            path_prefix: rune_id,
         })
     }
 
@@ -196,8 +229,10 @@ impl PoolManager {
             .find(|pool| pool.pending_transaction_counts < Self::MAX_PENDING_TRANSACTION_COUNTS)
     }
 
-    pub async fn next_new_btc_pool_address(&self) -> Result<(Pubkey, TweakedPublicKey, Address, String)> {
-        let next_pool_key_path = format!("{}_{}", self.path_prefix, self.btc_pools.len() );
+    pub async fn next_new_btc_pool_address(
+        &self,
+    ) -> Result<(Pubkey, TweakedPublicKey, Address, String)> {
+        let next_pool_key_path = format!("{}_{}", self.path_prefix, self.btc_pools.len());
         let (pubkey, tweaked_pubkey, address) = request_address(next_pool_key_path.clone()).await?;
         Ok((pubkey, tweaked_pubkey, address, next_pool_key_path))
     }
@@ -223,7 +258,6 @@ impl PoolManager {
         );
 
         Ok(())
-        
     }
 
     pub fn get_rune_pool_path(&self) -> String {
@@ -236,26 +270,20 @@ impl PoolManager {
         } else {
             let path = self.get_rune_pool_path();
             let (_pubkey, _tweaked_pubkey, address) = request_address(path).await?;
-            return Ok(address.to_string())
+            return Ok(address.to_string());
         }
     }
 
-    pub fn add_rune_pool(
-        &mut self,
-        pk: Pubkey,
-        addr: Address,
-        utxo: Utxo,
-    ) {
-
+    pub fn add_rune_pool(&mut self, pk: Pubkey, addr: Address, utxo: Utxo) {
         let key_path = self.get_rune_pool_path();
 
         self.rune_pool = Some(Pool::init(
-            self.path_prefix.clone(), 
-            key_path, 
-            pk, 
-            addr.to_string(), 
-            "".to_string(), 
-            utxo
-        )) ;
+            self.path_prefix.clone(),
+            key_path,
+            pk,
+            addr.to_string(),
+            "".to_string(),
+            utxo,
+        ));
     }
 }

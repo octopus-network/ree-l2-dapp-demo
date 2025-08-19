@@ -66,7 +66,7 @@ pub enum ExchangeError {
     #[error("Cookie balance({0}) insufficient")]
     CookieBalanceInsufficient(u128),
     #[error("Game Not Found: {0}")]
-    GameNotFound(usize),
+    GameNotFound(String),
     #[error("Game Not End")]
     GameNotEnd,
     #[error("Game End")]
@@ -86,8 +86,8 @@ pub enum ExchangeError {
     #[error("Invalid block, height: {0}, depth: {1}")]
     Recoverable(u32, u32),
 
-    #[error("Reorg error: {0}")]
-    ReorgError(#[from] reorg::ReorgError),
+    // #[error("Reorg error: {0}")]
+    // ReorgError(#[from] reorg::ReorgError),
 
     #[error("Pool address mismatch, expected: {expected}, actual: {actual}")]
     PoolAddressMismatch {

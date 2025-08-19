@@ -8,6 +8,7 @@ pub mod reorg;
 pub mod state;
 pub mod utils;
 pub mod pool;
+pub mod exchange;
 
 pub use candid::{CandidType, Principal};
 pub use errors::*;
@@ -15,8 +16,8 @@ pub use external::rune_indexer::{RuneEntry, Service as RuneIndexer};
 pub use ic_canister_log::log;
 pub use ic_stable_structures::StableBTreeMap;
 pub use log::*;
-pub use ree_types::Pubkey;
-pub use ree_types::{Txid, Utxo};
+pub use ree_exchange_sdk::types::Pubkey;
+pub use ree_exchange_sdk::types::{Txid, Utxo};
 pub use serde::{Deserialize, Serialize};
 
 pub const SIWB_TESTNET_CANISTER: &'static str = "stxih-wyaaa-aaaah-aq2la-cai";
@@ -32,6 +33,6 @@ pub type PoolId = Pubkey;
 pub type AddressStr = String;
 pub type RuneName = String;
 pub type RuneId = String;
-pub type GameId = usize;
+pub type GameId = String;
 pub const DUST_BTC_VALUE: u64 = 546;
 

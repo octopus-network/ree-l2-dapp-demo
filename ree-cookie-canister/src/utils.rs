@@ -1,11 +1,13 @@
 use ic_cdk::api::management_canister::bitcoin::{BitcoinNetwork, Satoshi};
-use ree_types::bitcoin::{Address, key::{Secp256k1, TapTweak, TweakedPublicKey}, Network};
+use ree_exchange_sdk::types::bitcoin::{key::{Secp256k1, TapTweak, TweakedPublicKey}, Address, Network};
 
 use crate::{external::management::request_schnorr_key, *};
 
 pub(crate) fn tweak_pubkey_with_empty(untweaked: Pubkey) -> TweakedPublicKey {
     let secp = Secp256k1::new();
-    let (tweaked, _) = untweaked.to_x_only_public_key().tap_tweak(&secp, None);
+    let (tweaked, _) = untweaked
+    .to_x_only_public_key()
+    .tap_tweak(&secp,None);
     tweaked
 }
 
@@ -27,23 +29,6 @@ pub struct RegisterInfo {
 pub struct AddLiquidityInfo {
     pub btc_amount_for_add_liquidity: Satoshi,
     pub rune_amount_for_add_liquidity: u128,
-}
-
-#[test]
-pub fn test_tweak_pubkey() {
-    let mock_raw_pubkey: Vec<u8> = vec![
-        0x02, 0x79, 0xBE, 0x66, 0x7E, 0xF9, 0xDC, 0xBB, 0xAC, 0x55, 0xA0, 0x62, 0x95, 0xCE, 0x87,
-        0x0B, 0x07, 0x02, 0x9B, 0xFC, 0xDB, 0x2D, 0xCE, 0x28, 0xD9, 0x59, 0xF2, 0x81, 0x5B, 0x16,
-        0xF8, 0x17, 0x98,
-    ];
-
-    let pubkey = Pubkey::from_raw(mock_raw_pubkey).unwrap();
-    let tweaked_pubkey = tweak_pubkey_with_empty(pubkey.clone());
-    let addr = ree_types::bitcoin::Address::p2tr_tweaked(
-        tweaked_pubkey,
-        ree_types::bitcoin::Network::Bitcoin,
-    );
-    dbg!(&addr);
 }
 
 pub fn get_max_recoverable_reorg_depth(network: BitcoinNetwork) -> u32 {
