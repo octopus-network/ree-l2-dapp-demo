@@ -1,6 +1,6 @@
 import { Actor, ActorSubclass, HttpAgent, Identity } from "@dfinity/agent";
 import { ICP_HOST } from "../../constants";
-import { idlFactory, _SERVICE as CookieService, Game, GameStatus, Pool } from "./service.did";
+import { idlFactory, _SERVICE as CookieService, Game, GameStatus, GameAndPool, Metadata } from "./service.did";
 
 export const COOKIE_CANISTER_ID = "k5j3t-jaaaa-aaaah-arcra-cai"
 
@@ -33,6 +33,14 @@ export function game_status_str(game_status: GameStatus): GameStatusStr {
     throw new Error(`Invalid game status: ${s}`);
   }
 }
+
+// export function get_pool_meta(game_and_pool: GameAndPool): Metadata | undefined {
+//   if(game_and_pool.pool_metadata.length ==0) {
+//     return undefined;
+//   } else {
+//     game_and_pool.pool_metadata[0]!
+//   }
+// }
 
 // export function get_btc_pool(game: Game): Pool {
 //   return game.pool_manager.btc_pools[0]?.[1]!;

@@ -6,6 +6,7 @@ use ic_stable_structures::Storable;
 use crate::utils::get_chain_second_timestamp;
 use crate::SecondTimestamp;
 use crate::*;
+use errors::*;
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct Gamer {
@@ -22,6 +23,12 @@ impl Storable for Gamer {
 
     fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
         bincode::deserialize(bytes.as_ref()).unwrap()
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        let mut bytes = vec![];
+        bincode::serialize_into(&mut bytes, &self).unwrap();
+        bytes
     }
 
     const BOUND: Bound = Bound::Unbounded;

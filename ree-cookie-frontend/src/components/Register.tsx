@@ -1,7 +1,7 @@
 import { useLaserEyes } from "@omnisat/lasereyes";
 import { Button } from "antd";
 import { cookieActor } from "canister/cookie/actor";
-import { Game, Gamer } from "canister/cookie/service.did";
+import { CookiePoolState, Game, GameAndPool, Gamer, Metadata } from "canister/cookie/service.did";
 import { ocActor } from "canister/orchestrator/actor";
 import { OrchestratorStatus } from "canister/orchestrator/service.did";
 import { COOKIE_EXCHANGE_ID } from "../constants/common";
@@ -19,12 +19,13 @@ import { connectWalletModalOpenAtom } from "./ConnectDialog";
 
 export function Register({
   game,
-}: // paymentAddress,
-// paymentAddressUtxos
+  pool_state,
+  pool_metadata,
+}: 
 {
   game: Game;
-  // paymentAddress: string;
-  // paymentAddressUtxos: UnspentOutput[] | undefined;
+  pool_state: CookiePoolState;
+  pool_metadata: Metadata;
 }) {
   const [connectWalletModalOpen, setConnectWalletModalOpen] = useAtom(
     connectWalletModalOpenAtom
@@ -45,12 +46,11 @@ export function Register({
       alert("No UTXOs found");
       return;
     }
-    // let register_info: RegisterInfo = await cookieActor.get_register_info()
-    // const btc_pool = get_btc_pool(game);
-    const btc_pool = game.pool[0]!;
-    const last_state = btc_pool.states[btc_pool.states.length - 1];
+
+    const last_state = pool_state;
+    console.log({pool_state, pool_metadata})
     const { address: poolAddress, output } = getP2trAressAndScript(
-      btc_pool.pubkey
+      pool_metadata.key
     );
     // let recommendedFeeRate = await Orchestrator.getRecommendedFee()
     let recommendedFeeRate = await ocActor
@@ -77,13 +77,15 @@ export function Register({
       userBtcUtxos: (btcUtxos ?? []).map((e) =>
         convertMaestroUtxo(e, publicKey)
       ),
-      poolBtcUtxo: convertUtxo(last_state?.utxo!, btc_pool.pubkey),
+      poolBtcUtxo: convertUtxo(last_state?.utxo!, pool_metadata.key),
       paymentAddress: paymentAddress,
       poolAddress: poolAddress!,
       feeRate: recommendedFeeRate,
       registerFee: game.gamer_register_fee,
     });
 
+
+    console.log(psbt);
     console.log(psbt.toHex());
 
     const psbtBase64 = psbt.toBase64();
@@ -116,7 +118,7 @@ export function Register({
               pool_utxo_spent: [],
               pool_utxo_received: [],
               output_coins: outputCoins,
-              pool_address: btc_pool.address,
+              pool_address: pool_metadata.address,
               action_params: JSON.stringify({
                 game_id: Number(game.game_id),
               }),

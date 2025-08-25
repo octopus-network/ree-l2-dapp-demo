@@ -4,6 +4,7 @@ use ic_cdk::api::management_canister::{
     schnorr::{self, SchnorrAlgorithm, SchnorrKeyId, SchnorrPublicKeyArgument},
 };
 use serde_bytes::ByteBuf;
+use errors::*;
 
 const MGMT_CANISTER_ID: &str = "aaaaa-aa";
 

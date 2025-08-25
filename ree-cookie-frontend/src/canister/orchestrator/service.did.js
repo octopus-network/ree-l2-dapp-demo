@@ -151,7 +151,6 @@ export const idlFactory = ({ IDL }) => {
     'pending_tx_count' : IDL.Nat64,
     'mempool_tx_fee_rate' : MempoolTxFeeRateView,
     'invoke_paused' : IDL.Bool,
-    'utxo_proof_verification_status' : UtxoProofVerificationStatus,
   });
   const TxStatus = IDL.Variant({
     'Confirmed' : IDL.Nat32,
