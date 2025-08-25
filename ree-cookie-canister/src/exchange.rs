@@ -1,8 +1,4 @@
-use std::borrow::Cow;
-
 use candid::CandidType;
-use ic_cdk::{query, update};
-use ic_stable_structures::{storable::Bound, Storable};
 use ree_exchange_sdk::{
     types::{CoinBalance, Txid, Utxo},
     StateInfo, StateView,
@@ -27,23 +23,6 @@ pub struct CookiePoolState {
     pub nonce: u64,
     pub utxo: Utxo,
     pub user_action: UserAction,
-}
-
-impl Storable for CookiePoolState {
-    const BOUND: Bound = Bound::Unbounded;
-    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
-        Cow::Owned(bincode::serialize(self).unwrap())
-    }
-
-    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
-        bincode::deserialize(bytes.as_ref()).unwrap()
-    }
-
-    fn into_bytes(self) -> Vec<u8> {
-        let mut bytes = vec![];
-        bincode::serialize_into(&mut bytes, &self).unwrap();
-        bytes
-    }
 }
 
 impl StateView for CookiePoolState {
@@ -75,6 +54,8 @@ pub mod exchange {
     };
 
     use super::*;
+    use crate::canister::*;
+    // ic_cdk::export_candid!();
 
     #[pools]
     pub struct CookiePools;
@@ -135,9 +116,9 @@ pub mod exchange {
     #[hook]
     impl Hook for CookiePools {
         fn on_tx_rollbacked(
-            address: String,
-            txid: Txid,
-            reason: String,
+            _address: String,
+            _txid: Txid,
+            _reason: String,
             rollbacked_states: Vec<CookiePoolState>,
         ) {
             for e in rollbacked_states {
@@ -162,11 +143,8 @@ pub mod exchange {
         }
     }
 
-    #[action(name = "register")]
-    pub async fn execute_register(
-        psbt: &mut bitcoin::Psbt,
-        args: ActionArgs,
-    ) -> ActionResult<CookiePoolState> {
+    #[action]
+    pub async fn register(psbt: &bitcoin::Psbt, args: ActionArgs) -> ActionResult<CookiePoolState> {
         let Intention {
             exchange_id: _,
             action: _,
@@ -205,14 +183,6 @@ pub mod exchange {
             )
             .map_err(|e| e.to_string())?;
 
-        ree_exchange_sdk::schnorr::sign_p2tr_in_psbt(
-            psbt,
-            std::slice::from_ref(&utxo),
-            CookiePools::network(),
-            key_derivation_path,
-        )
-        .await
-        .map_err(|e| format!("Failed to sign PSBT: {}", e))?;
         let initiator = args.initiator_address.clone();
         let principal_of_initiator = get_principal(initiator.clone()).await?;
         mutate_state(|es| {
@@ -227,9 +197,9 @@ pub mod exchange {
         Ok(new_state)
     }
 
-    #[action(name = "add_liquidity")]
-    pub async fn execute_add_liquidity(
-        psbt: &mut bitcoin::Psbt,
+    #[action]
+    pub async fn add_liquidity(
+        psbt: &bitcoin::Psbt,
         args: ActionArgs,
     ) -> ActionResult<CookiePoolState> {
         let Intention {
@@ -269,15 +239,6 @@ pub mod exchange {
             )
             .map_err(|e| e.to_string())?;
 
-        ree_exchange_sdk::schnorr::sign_p2tr_in_psbt(
-            psbt,
-            std::slice::from_ref(&utxo),
-            CookiePools::network(),
-            key_derivation_path,
-        )
-        .await
-        .map_err(|e| format!("Failed to sign PSBT: {}", e))?;
-
         mutate_state(|es| {
             let game_id = game.game_id;
             let game = es.games.get_mut(&game_id).ok_or("Game not found").unwrap();
@@ -287,9 +248,9 @@ pub mod exchange {
         Ok(new_state)
     }
 
-    #[action(name = "withdraw")]
-    pub async fn execute_withdraw(
-        psbt: &mut bitcoin::Psbt,
+    #[action]
+    pub async fn withdraw(
+        psbt: &bitcoin::Psbt,
         args: ActionArgs,
     ) -> ActionResult<CookiePoolState> {
         let Intention {
@@ -329,15 +290,6 @@ pub mod exchange {
                 args.initiator_address.clone(),
             )
             .map_err(|e| e.to_string())?;
-
-        ree_exchange_sdk::schnorr::sign_p2tr_in_psbt(
-            psbt,
-            std::slice::from_ref(&utxo),
-            CookiePools::network(),
-            key_derivation_path,
-        )
-        .await
-        .map_err(|e| format!("Failed to sign PSBT: {}", e))?;
 
         mutate_state(|es| {
             let game_id = game.game_id;

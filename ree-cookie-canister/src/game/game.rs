@@ -3,11 +3,7 @@ use std::collections::HashMap;
 
 use crate::exchange::exchange::CookiePools;
 use crate::exchange::{CookiePoolState, UserAction};
-use crate::pool::{
-    Pool,
-    PoolState,
-    // UserAction
-};
+
 use crate::*;
 use crate::{utils::get_chain_second_timestamp, AddressStr, ExchangeError, Seconds};
 use ic_cdk::api::management_canister::bitcoin::Satoshi;
@@ -17,6 +13,7 @@ use ree_exchange_sdk::prelude::PoolStorageAccess;
 use ree_exchange_sdk::types::{CoinId, InputCoin, OutputCoin};
 // use ree_exchange_sdk::{CoinId, InputCoin, OutputCoin};
 use serde::{Deserialize, Serialize};
+use errors::*;
 
 use super::gamer::Gamer;
 
@@ -38,6 +35,13 @@ pub struct Game {
     pub gamers: HashMap<AddressStr, Gamer>,
     #[serde(default)]
     pub etch_rune_commit_tx: String,
+}
+
+#[derive(CandidType, Deserialize, Serialize, Clone)]
+pub struct GameAndPool {
+    pub game: Game,
+    pub pool_metadata: Option<Metadata>,
+    pub pool_state: Option<CookiePoolState>,
 }
 
 #[derive(CandidType, Deserialize, Serialize, Clone)]

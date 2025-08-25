@@ -91,7 +91,7 @@ pub async fn etching(args: EtchingArgs) -> Result<String, String> {
         created_at_time: None,
     };
     let result: (Result<Nat, ApproveError>,) = ic_cdk::api::call::call(
-        etching_principal,
+        Principal::from_text(ICP_LEDGER_CANISTER_ID).unwrap(),
         "icrc2_approve",
         (approve_args,)
     )
@@ -125,8 +125,4 @@ pub async fn etching(args: EtchingArgs) -> Result<String, String> {
             .await
             .expect("Failed to call etch canister");
     r.0
-}
-
-fn untuple<T>(t: (T,)) -> T {
-    t.0
 }

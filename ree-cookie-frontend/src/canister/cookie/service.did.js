@@ -189,7 +189,6 @@ export const idlFactory = ({ IDL }) => {
     'claim' : IDL.Func([IDL.Nat64], [Result], []),
     'create_game' : IDL.Func([CreateGameArgs], [Result_1], []),
     'etch_rune' : IDL.Func([IDL.Nat64, IDL.Text], [Result_2], []),
-    'etching_test' : IDL.Func([], [Result_2], []),
     'execute_tx' : IDL.Func([ExecuteTxArgs], [Result_2], []),
     'finalize_etch' : IDL.Func([IDL.Nat64], [Result_2], []),
     'get_exchange_state' : IDL.Func([], [ExchangeState], ['query']),
@@ -202,7 +201,6 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'get_pool_list' : IDL.Func([], [IDL.Vec(PoolBasic)], ['query']),
-    'get_pool_states' : IDL.Func([], [IDL.Vec(PoolState)], ['query']),
     'new_block' : IDL.Func([NewBlockInfo], [Result_3], []),
     'query_add_liquidity_info' : IDL.Func(
         [IDL.Nat64],

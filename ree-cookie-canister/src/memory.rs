@@ -8,32 +8,30 @@ use ic_stable_structures::{
 use ree_exchange_sdk::types::{NewBlockInfo, TxRecord, Txid};
 // use ree_exchange_sdk::{exchange_interfaces::NewBlockInfo, TxRecord, Txid};
 
-use crate::{game::{game::Game, gamer::Gamer}, state::ExchangeState, AddressStr};
+use crate::{game::{game::Game, gamer::Gamer}, state::ExchangeState, AddressStr, GameId};
 
 pub type Memory = VirtualMemory<DefaultMemoryImpl>;
 
 const STATE_MEMORY_ID: MemoryId = MemoryId::new(1);
-const GAMERS_MEMORY_ID: MemoryId = MemoryId::new(2);
+const GAME_POOLS_MEMORY_ID: MemoryId = MemoryId::new(2);
 const ADDRESS_PRINCIPAL_MAP_MEMORY_ID: MemoryId = MemoryId::new(3);
-const BLOCKS_MEMORY_ID: MemoryId = MemoryId::new(4);
-const TX_RECORDS_MEMORY_ID: MemoryId = MemoryId::new(5);
 
 thread_local! {
 
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =
     RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
 
-    pub static STATE: RefCell<Cell<Option<ExchangeState>, Memory>> = RefCell::new(
+    pub static STATE: RefCell<Cell<ExchangeState, Memory>> = RefCell::new(
         Cell::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(STATE_MEMORY_ID)),
-            Option::None
+            ExchangeState::default()
         )
         // .expect("state memory not initialized")
     );
 
-    pub static GAMES: RefCell<StableBTreeMap<AddressStr, Game, Memory>> = RefCell::new(
+    pub static GAME_POOLS: RefCell<StableBTreeMap<GameId, AddressStr, Memory>> = RefCell::new(
         StableBTreeMap::init(
-            MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)),
+            MEMORY_MANAGER.with(|m| m.borrow().get(GAME_POOLS_MEMORY_ID)),
         )
     );
 
@@ -43,39 +41,17 @@ thread_local! {
         )
     );
 
-    pub static BLOCKS: RefCell<StableBTreeMap<u32, NewBlockInfo, Memory>> = RefCell::new(
-        StableBTreeMap::init(
-            MEMORY_MANAGER.with(|m| m.borrow().get(BLOCKS_MEMORY_ID)),
-        )
-    );
-
-    pub static TX_RECORDS: RefCell<StableBTreeMap<(Txid, bool), TxRecord, Memory>> = RefCell::new(
-        StableBTreeMap::init(
-            MEMORY_MANAGER.with(|m| m.borrow().get(TX_RECORDS_MEMORY_ID)),
-        )
-    );
-
 }
-
-pub fn init_gamer() -> StableBTreeMap<AddressStr, Gamer, Memory> {
-    // StableBTreeMap::init(with_memory_manager(|m| m.get(GAMERS_MEMORY_ID)))
-    StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(GAMERS_MEMORY_ID)))
-}
-
-// pub fn init_address_principal_map() -> StableBTreeMap<Principal, Address, Memory> {
-//     // StableBTreeMap::init(with_memory_manager(|m| m.get(ADDRESS_PRINCIPAL_MAP_MEMORY_ID)))
-//     StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(ADDRESS_PRINCIPAL_MAP_MEMORY_ID)))
-// }
 
 pub fn get_state() -> ExchangeState {
-    STATE.with(|c| c.borrow().get().clone().unwrap())
+    STATE.with(|c| c.borrow().get().clone())
 }
 
 pub fn set_state(state: ExchangeState) {
     STATE.with(|c| {
         c.borrow_mut()
-            .set(Some(state))
-            .expect("Failed to set SETTINGS.")
+            .set(state)
+            // .expect("Failed to set STATE.")
     });
 }
 

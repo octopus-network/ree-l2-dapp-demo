@@ -7,18 +7,22 @@ pub mod memory;
 pub mod reorg;
 pub mod state;
 pub mod utils;
-pub mod pool;
 pub mod exchange;
 
 pub use candid::{CandidType, Principal};
-pub use errors::*;
+pub use errors::ExchangeError;
 pub use external::rune_indexer::{RuneEntry, Service as RuneIndexer};
 pub use ic_canister_log::log;
 pub use ic_stable_structures::StableBTreeMap;
 pub use log::*;
-pub use ree_exchange_sdk::types::Pubkey;
-pub use ree_exchange_sdk::types::{Txid, Utxo};
 pub use serde::{Deserialize, Serialize};
+use game::game::CreateGameArgs;
+use state::ExchangeState;
+use game::game::Game;
+use utils::AddLiquidityInfo;
+use ree_exchange_sdk::{types::{Txid, Utxo, Pubkey}, Metadata};
+use exchange::CookiePoolState;
+use game::game::GameAndPool;
 
 pub const SIWB_TESTNET_CANISTER: &'static str = "stxih-wyaaa-aaaah-aq2la-cai";
 pub const RUNE_INDEXER_CANISTER: &'static str = "f2dwm-caaaa-aaaao-qjxlq-cai";
@@ -36,3 +40,6 @@ pub type RuneId = String;
 pub type GameId = String;
 pub const DUST_BTC_VALUE: u64 = 546;
 
+
+// Enable Candid export
+ic_cdk::export_candid!();

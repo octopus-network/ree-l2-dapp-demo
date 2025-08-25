@@ -1854,7 +1854,7 @@ dependencies = [
 
 [[package]]
 name = "ree-cookie"
-version = "0.1.1"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1882,7 +1882,8 @@ dependencies = [
 
 [[package]]
 name = "ree-exchange-sdk"
-version = "0.9.0"
+version = "0.10.0"
+source = "git+https://github.com/octopus-network/ree-exchange-sdk.git?branch=v10#07c59aecd839c1a9c812f65886a6c678c093bb21"
 dependencies = [
  "bincode",
  "candid",
@@ -1896,7 +1897,8 @@ dependencies = [
 
 [[package]]
 name = "ree-exchange-sdk-macro"
-version = "0.9.0"
+version = "0.10.0"
+source = "git+https://github.com/octopus-network/ree-exchange-sdk.git?branch=v10#07c59aecd839c1a9c812f65886a6c678c093bb21"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1905,7 +1907,8 @@ dependencies = [
 
 [[package]]
 name = "ree-types"
-version = "0.9.0"
+version = "0.10.0"
+source = "git+https://github.com/octopus-network/ree-exchange-sdk.git?branch=v10#07c59aecd839c1a9c812f65886a6c678c093bb21"
 dependencies = [
  "anyhow",
  "bincode",

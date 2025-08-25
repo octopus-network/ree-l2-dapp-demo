@@ -1,6 +1,6 @@
 use ic_cdk::api::management_canister::bitcoin::{BitcoinNetwork, Satoshi};
 use ree_exchange_sdk::types::bitcoin::{key::{Secp256k1, TapTweak, TweakedPublicKey}, Address, Network};
-
+use errors::*;
 use crate::{external::management::request_schnorr_key, *};
 
 pub(crate) fn tweak_pubkey_with_empty(untweaked: Pubkey) -> TweakedPublicKey {
@@ -44,7 +44,7 @@ pub fn get_max_recoverable_reorg_depth(network: BitcoinNetwork) -> u32 {
 // }
 
 pub async fn request_address(key_path: String)->Result<(Pubkey, TweakedPublicKey, Address)> {
-    let untweaked_pubkey = request_schnorr_key("key_1", key_path.into_bytes()).await?;
+    let untweaked_pubkey = request_schnorr_key("test_key_1", key_path.into_bytes()).await?;
     let tweaked_pubkey = tweak_pubkey_with_empty(untweaked_pubkey.clone());
     cfg_if::cfg_if! {
     if #[cfg(feature = "testnet")] {
