@@ -138,7 +138,6 @@ export interface OrchestratorStatus {
   'pending_tx_count' : bigint,
   'mempool_tx_fee_rate' : MempoolTxFeeRateView,
   'invoke_paused' : boolean,
-  'utxo_proof_verification_status' : UtxoProofVerificationStatus,
 }
 export interface OutpointWithValue {
   'maybe_rune' : [] | [CoinBalance],

@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { cookieActor } from "../canister/cookie/actor";
-import type { Game } from "../canister/cookie/service.did";
+import type { Game, GameAndPool } from "../canister/cookie/service.did";
 import { etchActor } from "canister/etching/actor";
 
 export function useGames() {
 
-    return useQuery<Game[]>({
+    return useQuery<GameAndPool[]>({
         queryKey: ["games"],
         queryFn: async () => {
             const games = await cookieActor.get_games_info();
@@ -18,10 +18,10 @@ export function useGames() {
 
 export function useGame( gameId: string) {
 
-    return useQuery<Game>({
+    return useQuery<GameAndPool>({
         queryKey: ["game", gameId],
         queryFn: async () => {
-            const game = await cookieActor.get_game_info(BigInt(gameId));
+            const game = await cookieActor.get_game_info(gameId);
             return game[0]!;
         },
         retry: false,

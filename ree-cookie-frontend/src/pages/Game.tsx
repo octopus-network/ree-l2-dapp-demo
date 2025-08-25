@@ -18,9 +18,12 @@ import {
 } from "canister/cookie/actor";
 import {
   AddLiquidityInfo,
+  CookiePoolState,
   Game,
+  GameAndPool,
   Gamer,
   GameStatus,
+  Metadata,
 } from "canister/cookie/service.did";
 import { ocActor } from "canister/orchestrator/actor";
 import { OrchestratorStatus } from "canister/orchestrator/service.did";
@@ -64,14 +67,14 @@ export const stateStepIndex = (game_status: GameStatus) => {
 
 export function GameDetail() {
   const { game_id } = useParams<{ game_id: string }>();
-  const { data: game, isLoading, isError, error } = useGame(game_id!);
-  const [current, setCurrent] = useState(0);
+  const { data: game_and_pool, isLoading, isError, error } = useGame(game_id!);
+  const [current, setCurrent] = useState<number>(0);
 
   useEffect(() => {
-    if (game) {
-      setCurrent(stateStepIndex(game!.game_status));
+    if (game_and_pool) {
+      setCurrent(stateStepIndex(game_and_pool.game!.game_status));
     }
-  }, [game]);
+  }, [game_and_pool]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -81,22 +84,39 @@ export function GameDetail() {
     return <div>Error loading game: {error.message}</div>;
   }
 
+  console.log({ game_and_pool });
+
+
   const steps = [
     {
       title: "Etching",
-      content: <Etching game={game!} />,
+      content: <Etching game_and_pool={game_and_pool!} />,
     },
     {
       title: "Playing",
-      content: <Playing game={game!} />,
+      content: <Playing 
+      game={game_and_pool!.game} 
+      pool_state={game_and_pool!.pool_state[0]!}
+      pool_metadata={game_and_pool!.pool_metadata[0]!}
+      />,
     },
     {
       title: "Wait Added Liquidity",
-      content: <WaitAddedLiquidity game={game!} />,
+      content: <WaitAddedLiquidity 
+      game={game_and_pool!.game} 
+      pool_state={game_and_pool!.pool_state[0]!}
+      pool_metadata={game_and_pool!.pool_metadata[0]!}
+      />,
     },
     {
       title: "Withdrawing",
-      content: <Withdrawing game={game!} />,
+      content: (
+        <Withdrawing
+          game={game_and_pool!.game}
+          pool_state={game_and_pool!.pool_state[0]!}
+          pool_metadata={game_and_pool!.pool_metadata[0]!}
+        />
+      ),
     },
   ];
   const items = steps.map((item) => ({ key: item.title, title: item.title }));
@@ -116,7 +136,15 @@ export function GameDetail() {
   );
 }
 
-function Playing({ game }: { game: Game }) {
+function Playing({ 
+  game,
+  pool_state,
+  pool_metadata,
+}: { 
+  game: Game,
+  pool_state: CookiePoolState,
+  pool_metadata: Metadata
+}) {
   // const ope
   // const [connectWalletModalOpen, setConnectWalletModalOpen] = useAtom(
   // 	connectWalletModalOpenAtom
@@ -124,33 +152,11 @@ function Playing({ game }: { game: Game }) {
   const setConnectWalletModalOpen = useSetAtom(connectWalletModalOpenAtom);
   const { identityAddress, identity } = useSiwbIdentity();
   const currentGamer = useMemo(() => {
-    return game.gamers.find((gamer) => gamer[0] === identityAddress)?.[1];
+    return game.gamers.find(
+      (gamer) => gamer[0] === identityAddress
+    )?.[1];
   }, [game.gamers, identityAddress]);
   const isGameEnd = stateStepIndex(game.game_status) > 1;
-  // const { address, connect } = useLaserEyes();
-  // const [isRegistered, setIsRegistered] = useState<boolean>(false);
-  // const [loading, setLoading] = useState<boolean>(true);
-  // const [lastClaimTime, setLastClaimTime] = useState<bigint>(BigInt(0));
-  // const [claimCoolingDown, setClaimCoolingDown] = useState<bigint>(BigInt(0));
-  // const [claimedCookies, setClaimedCookies] = useState<bigint>(BigInt(0));
-  // const [cookieAmountPerClick, setCookieAmountPerClick] = useState<bigint>(
-  // BigInt(0)
-  // );
-  // const [messageApi, contextHolder] = message.useMessage();
-
-  // const isLoading = useMemo(()=> {
-
-  // }, [])
-
-  // return (
-  //   currentGamer ?
-  //   <Claim
-  //   game={game}
-  //   gamer={currentGamer}
-  //   />
-  //   :
-  //   <Register game={game} />
-  // )
 
   return (
     <div>
@@ -165,14 +171,13 @@ function Playing({ game }: { game: Game }) {
               <Claim
                 game={game}
                 gamer={currentGamer!}
-                // lastClaimTime={lastClaimTime}
-                // claimCoolingDown={claimCoolingDown}
-                // claimedCookies={claimedCookies}
-                // cookieAmountPerClick={cookieAmountPerClick}
-                // onClaim={clickClaim}
               />
             ) : (
-              <Register game={game} />
+              <Register 
+              game={game} 
+              pool_state={pool_state}
+              pool_metadata={pool_metadata}
+              />
             )
           ) : (
             <Skeleton />
@@ -189,11 +194,9 @@ function Playing({ game }: { game: Game }) {
 
 function EtchProcess({
   commit_txid,
-  game_id,
   game,
 }: {
   commit_txid: string | undefined;
-  game_id: bigint;
   game: Game;
 }) {
   const { identity } = useSiwbIdentity();
@@ -264,7 +267,7 @@ function EtchProcess({
           onClick={() => {
             setFinalizing(true);
             cookieActorWithIdentity(identity!)
-              .finalize_etch(game_id!)
+              .finalize_etch(game.game_id!)
               .then(() => {})
               .catch((e) => {
                 alert("Finalize Etch Failed: " + e.message);
@@ -291,26 +294,20 @@ function EtchProcess({
   );
 }
 
-function Etching({ game }: { game: Game }) {
+function Etching({ game_and_pool }: { game_and_pool: GameAndPool }) {
   // game.
   const [isEtching, setIsEtching] = useState<boolean>(false);
   const { identity } = useSiwbIdentity();
 
-  let commit_txid = game.etch_rune_commit_tx;
+  let commit_txid = game_and_pool.game.etch_rune_commit_tx;
 
   return (
     <div className="flex flex-col items-center text-black">
       {commit_txid ? (
-        <EtchProcess
-          game={game}
-          game_id={game.game_id}
-          commit_txid={commit_txid}
-        />
+        <EtchProcess game={game_and_pool.game} commit_txid={commit_txid} />
       ) : (
         <div className="w-100 mt-20">
-          <p>
-            Please transfer 1 $ICP to {COOKIE_CANISTER_ID} before etch
-          </p>
+          <p>Please transfer 1 $ICP to this canister before etch: <br/><p className="text-blue-500 text-xl font-medium my-2">{COOKIE_CANISTER_ID}</p> </p>
           <Search
             placeholder="Rune Name"
             enterButton="Etch"
@@ -318,7 +315,7 @@ function Etching({ game }: { game: Game }) {
             onSearch={(value) => {
               setIsEtching(true);
               cookieActorWithIdentity(identity!)
-                .etch_rune(game.game_id, value)
+                .etch_rune(game_and_pool.game.game_id, value)
                 .then((r) => {
                   if ("Ok" in r) {
                     alert("Etch Success: " + JSON.stringify(r.Ok));
@@ -360,7 +357,15 @@ function Etching({ game }: { game: Game }) {
 //   </div>
 // }
 
-function WaitAddedLiquidity({ game }: { game: Game }) {
+function WaitAddedLiquidity({ 
+  game,
+  pool_state,
+  pool_metadata 
+}: { 
+  game: Game,
+  pool_state: CookiePoolState,
+  pool_metadata: Metadata
+}) {
   const setConnectWalletModalOpen = useSetAtom(connectWalletModalOpenAtom);
   const [loading, setLoading] = useState<boolean>(false);
   const [isCalling, setIsCalling] = useState<boolean>(false);
@@ -388,8 +393,9 @@ function WaitAddedLiquidity({ game }: { game: Game }) {
     f();
   }, []);
 
-  const pool = game.pool[0]!;
-  const last_pool_state = pool.states[pool.states.length - 1];
+  // const pool = game.pool[0]!;
+  // const last_pool_state = pool.states[pool.states.length - 1];
+  const last_pool_state = pool_state;
 
   // const btc_pool = game.pool_manager.btc_pools[0]![1];
   // const rune_pool = game.pool_manager.rune_pool[0]!;
@@ -441,13 +447,13 @@ function WaitAddedLiquidity({ game }: { game: Game }) {
       gameid: Number(game.game_id),
       runeAmountForAddLiquidity:
         addLiquidityInfo!.rune_amount_for_add_liquidity,
-      cookiePoolUtxo: convertUtxo(last_pool_state!.utxo, pool.pubkey),
+      cookiePoolUtxo: convertUtxo(last_pool_state!.utxo, pool_metadata.key),
       paymentAddress: paymentAddress,
       swapPoolAddress: gameSwapPool!.address,
-      cookiePoolAddress: pool.address,
+      cookiePoolAddress: pool_metadata.address,
       feeRate: Number(recommendedFeeRate.toString()),
       signPsbt: signPsbt,
-      cookiePoolNonce: BigInt(pool.nonce),
+      cookiePoolNonce: BigInt(pool_state.nonce),
       swapPoolNonce: liquidityOffer.nonce,
     });
   };
@@ -503,13 +509,22 @@ function WaitAddedLiquidity({ game }: { game: Game }) {
   );
 }
 
-function Withdrawing({ game }: { game: Game }) {
+function Withdrawing({
+  game,
+  pool_state,
+  pool_metadata,
+}: {
+  game: Game;
+  pool_state: CookiePoolState;
+  pool_metadata: Metadata;
+}) {
   const [calling, setCalling] = useState<boolean>(false);
   const { address, paymentAddress, signPsbt } = useLaserEyes();
   const setConnectWalletModalOpen = useSetAtom(connectWalletModalOpenAtom);
   const userBtcUtxos = useWalletBtcUtxos();
-  const pool = game.pool[0]!;
-  const last_pool_state = pool.states[pool.states.length - 1];
+  // const pool = game.pool[0]!;
+  // const last_pool_state = pool.states[pool.states.length - 1];
+  const last_pool_state = pool_state;
 
   const rune_id = game.rune_info[0]!.rune_id;
 
@@ -531,13 +546,13 @@ function Withdrawing({ game }: { game: Game }) {
       userBtcUtxos: userBtcUtxos!,
       runeId: rune_id,
       gameId: Number(game.game_id),
-      cookiePoolBtcUtxo: convertUtxo(last_pool_state!.utxo, pool.pubkey),
+      cookiePoolBtcUtxo: convertUtxo(last_pool_state!.utxo, pool_metadata.key),
       paymentAddress: paymentAddress,
       address: address,
-      cookiePoolAddress: pool.address,
+      cookiePoolAddress: pool_metadata.address,
       feeRate: Number(recommendedFeeRate.toString()),
       signPsbt: signPsbt,
-      cookiePoolNonce: pool.nonce,
+      cookiePoolNonce: pool_state.nonce,
       withdrawAmount: BigInt(currentGamer!.cookies),
     });
   };
@@ -568,7 +583,7 @@ function Withdrawing({ game }: { game: Game }) {
                 });
             }}
           >
-            Withdraw {currentGamer!.cookies} game rune token 
+            Withdraw {currentGamer!.cookies} game rune token
           </Button>
         )
       ) : (

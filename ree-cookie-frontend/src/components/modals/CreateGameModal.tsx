@@ -77,7 +77,7 @@ export function CreateGameModal() {
           <InputNumber />
         </Form.Item>
         <Form.Item<FieldType>
-          label="Click Cooling Down"
+          label="Click Cooling Down(Seconds)"
           name="claimCoolingDown"
           rules={[{ required: true, message: "Please input your click cooling down!" }]}
         >

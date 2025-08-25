@@ -5,7 +5,6 @@ import { List } from "antd";
 import { useSetAtom } from "jotai";
 import { createGameModalOpenAtom } from "components/modals/CreateGameModal";
 import { useLaserEyes } from "@omnisat/lasereyes";
-import { ad } from "vitest/dist/chunks/reporters.d.DL9pg5DB.js";
 import { } from "components/modals/ConnetWalletModal";
 import { game_status_str } from "canister/cookie/actor";
 import { Link } from "react-router-dom";
@@ -40,7 +39,7 @@ export function Home() {
         grid={{
           gutter: 16,
         }}
-        dataSource={games ?? []}
+        dataSource={games?.map(e=>e.game) ?? []}
         renderItem={(game: Game) => (
           <List.Item>
             <GameItem game={game} />

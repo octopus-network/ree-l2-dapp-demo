@@ -7,6 +7,12 @@ export interface AddLiquidityInfo {
   'rune_amount_for_add_liquidity' : bigint,
 }
 export interface CoinBalance { 'id' : string, 'value' : bigint }
+export interface CookiePoolState {
+  'txid' : string,
+  'utxo' : Utxo,
+  'user_action' : UserAction,
+  'nonce' : bigint,
+}
 export interface CreateGameArgs {
   'rune_premine_amount' : bigint,
   'create_address' : string,
@@ -26,7 +32,6 @@ export type ExchangeError = { 'InvalidSignPsbtArgs' : string } |
   { 'RuneNotFound' : string } |
   { 'CookieBalanceInsufficient' : bigint } |
   { 'GameEnd' : null } |
-  { 'ReorgError' : ReorgError } |
   { 'GamerAlreadyExist' : string } |
   { 'DuplicateBlock' : [number, string] } |
   { 'PoolStateExpired' : bigint } |
@@ -39,7 +44,7 @@ export type ExchangeError = { 'InvalidSignPsbtArgs' : string } |
   { 'InvalidRuneId' : null } |
   { 'InvalidPool' : null } |
   { 'InvalidPsbt' : string } |
-  { 'GameNotFound' : bigint } |
+  { 'GameNotFound' : string } |
   { 'PoolAlreadyExists' : null } |
   { 'GamerCoolingDown' : [string, bigint] } |
   { 'InvalidTxid' : string } |
@@ -58,9 +63,8 @@ export type ExchangeError = { 'InvalidSignPsbtArgs' : string } |
   { 'RuneIdNotMatch' : [string, string] } |
   { 'PoolAddressMismatch' : { 'actual' : string, 'expected' : string } };
 export interface ExchangeState {
-  'txid_game_map' : Array<[string, bigint]>,
-  'orchestrator' : Principal,
-  'games' : Array<[bigint, Game]>,
+  'txid_game_map' : Array<[string, string]>,
+  'games' : Array<[string, Game]>,
 }
 export interface ExecuteTxArgs {
   'zero_confirmed_tx_queue_length' : number,
@@ -74,16 +78,20 @@ export interface Game {
   'claimed_cookies' : bigint,
   'rune_premine_amount' : bigint,
   'creator_address' : string,
-  'pool' : [] | [Pool],
   'rune_info' : [] | [RuneInfo],
   'gamers' : Array<[string, Gamer]>,
   'claim_amount_per_click' : bigint,
-  'game_id' : bigint,
+  'game_id' : string,
   'game_status' : GameStatus,
   'game_name' : string,
   'etch_rune_commit_tx' : string,
   'claim_cooling_down' : bigint,
   'gamer_register_fee' : bigint,
+}
+export interface GameAndPool {
+  'game' : Game,
+  'pool_state' : [] | [CookiePoolState],
+  'pool_metadata' : [] | [Metadata],
 }
 export type GameStatus = { 'WaitAddedLiquidity' : null } |
   { 'Playing' : null } |
@@ -113,6 +121,12 @@ export interface IntentionSet {
   'initiator_address' : string,
   'intentions' : Array<Intention>,
 }
+export interface Metadata {
+  'key' : string,
+  'name' : string,
+  'key_derivation_path' : Array<Uint8Array | number[]>,
+  'address' : string,
+}
 export interface NewBlockInfo {
   'block_hash' : string,
   'confirmed_txids' : Array<string>,
@@ -120,16 +134,6 @@ export interface NewBlockInfo {
   'block_height' : number,
 }
 export interface OutputCoin { 'to' : string, 'coin' : CoinBalance }
-export interface Pool {
-  'states' : Array<PoolState>,
-  'name' : string,
-  'pubkey' : string,
-  'key_derivation_path' : string,
-  'attributes' : string,
-  'address' : string,
-  'nonce' : bigint,
-  'pending_transaction_counts' : bigint,
-}
 export interface PoolBasic { 'name' : string, 'address' : string }
 export interface PoolInfo {
   'key' : string,
@@ -142,12 +146,6 @@ export interface PoolInfo {
   'nonce' : bigint,
   'utxos' : Array<Utxo>,
 }
-export interface PoolState {
-  'id' : string,
-  'utxo' : Utxo,
-  'user_action' : UserAction,
-  'nonce' : bigint,
-}
 export type RejectionCode = { 'NoError' : null } |
   { 'CanisterError' : null } |
   { 'SysTransient' : null } |
@@ -155,26 +153,18 @@ export type RejectionCode = { 'NoError' : null } |
   { 'Unknown' : null } |
   { 'SysFatal' : null } |
   { 'CanisterReject' : null };
-export type ReorgError = {
-    'DuplicateBlock' : { 'height' : number, 'hash' : string }
-  } |
-  { 'BlockNotFoundInState' : { 'height' : number } } |
-  { 'Unrecoverable' : null } |
-  { 'Recoverable' : { 'height' : number, 'depth' : number } };
 export type Result = { 'Ok' : bigint } |
   { 'Err' : ExchangeError };
-export type Result_1 = { 'Ok' : bigint } |
+export type Result_1 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_2 = { 'Ok' : string } |
+export type Result_2 = { 'Ok' : null } |
   { 'Err' : string };
-export type Result_3 = { 'Ok' : null } |
-  { 'Err' : string };
-export interface RollbackTxArgs { 'txid' : string }
+export interface RollbackTxArgs { 'txid' : string, 'reason_code' : string }
 export interface RuneInfo { 'rune_name' : string, 'rune_id' : string }
-export type UserAction = { 'Withdraw' : string } |
+export type UserAction = { 'Withdraw' : [string, string] } |
   { 'AddLiquidity' : null } |
   { 'Init' : null } |
-  { 'Register' : string };
+  { 'Register' : [string, string] };
 export interface Utxo {
   'coins' : Array<CoinBalance>,
   'sats' : bigint,
@@ -182,21 +172,20 @@ export interface Utxo {
   'vout' : number,
 }
 export interface _SERVICE {
-  'claim' : ActorMethod<[bigint], Result>,
+  'claim' : ActorMethod<[string], Result>,
   'create_game' : ActorMethod<[CreateGameArgs], Result_1>,
-  'etch_rune' : ActorMethod<[bigint, string], Result_2>,
-  'execute_tx' : ActorMethod<[ExecuteTxArgs], Result_2>,
-  'finalize_etch' : ActorMethod<[bigint], Result_2>,
+  'etch_rune' : ActorMethod<[string, string], Result_1>,
+  'execute_tx' : ActorMethod<[ExecuteTxArgs], Result_1>,
+  'finalize_etch' : ActorMethod<[string], Result_1>,
   'get_exchange_state' : ActorMethod<[], ExchangeState>,
-  'get_game_info' : ActorMethod<[bigint], [] | [Game]>,
-  'get_game_pool_address' : ActorMethod<[bigint], string>,
-  'get_games_info' : ActorMethod<[], Array<Game>>,
+  'get_game_info' : ActorMethod<[string], [] | [GameAndPool]>,
+  'get_game_pool_address' : ActorMethod<[string], string>,
+  'get_games_info' : ActorMethod<[], Array<GameAndPool>>,
   'get_pool_info' : ActorMethod<[GetPoolInfoArgs], [] | [PoolInfo]>,
   'get_pool_list' : ActorMethod<[], Array<PoolBasic>>,
-  'new_block' : ActorMethod<[NewBlockInfo], Result_3>,
-  'query_add_liquidity_info' : ActorMethod<[bigint], AddLiquidityInfo>,
-  'reset_blocks' : ActorMethod<[], undefined>,
-  'rollback_tx' : ActorMethod<[RollbackTxArgs], Result_3>,
+  'new_block' : ActorMethod<[NewBlockInfo], Result_2>,
+  'query_add_liquidity_info' : ActorMethod<[string], AddLiquidityInfo>,
+  'rollback_tx' : ActorMethod<[RollbackTxArgs], Result_2>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

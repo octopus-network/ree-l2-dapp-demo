@@ -1,10 +1,4 @@
 export const idlFactory = ({ IDL }) => {
-  const ReorgError = IDL.Variant({
-    'DuplicateBlock' : IDL.Record({ 'height' : IDL.Nat32, 'hash' : IDL.Text }),
-    'BlockNotFoundInState' : IDL.Record({ 'height' : IDL.Nat32 }),
-    'Unrecoverable' : IDL.Null,
-    'Recoverable' : IDL.Record({ 'height' : IDL.Nat32, 'depth' : IDL.Nat32 }),
-  });
   const GameStatus = IDL.Variant({
     'WaitAddedLiquidity' : IDL.Null,
     'Playing' : IDL.Null,
@@ -32,7 +26,6 @@ export const idlFactory = ({ IDL }) => {
     'RuneNotFound' : IDL.Text,
     'CookieBalanceInsufficient' : IDL.Nat,
     'GameEnd' : IDL.Null,
-    'ReorgError' : ReorgError,
     'GamerAlreadyExist' : IDL.Text,
     'DuplicateBlock' : IDL.Tuple(IDL.Nat32, IDL.Text),
     'PoolStateExpired' : IDL.Nat64,
@@ -45,7 +38,7 @@ export const idlFactory = ({ IDL }) => {
     'InvalidRuneId' : IDL.Null,
     'InvalidPool' : IDL.Null,
     'InvalidPsbt' : IDL.Text,
-    'GameNotFound' : IDL.Nat64,
+    'GameNotFound' : IDL.Text,
     'PoolAlreadyExists' : IDL.Null,
     'GamerCoolingDown' : IDL.Tuple(IDL.Text, IDL.Nat64),
     'InvalidTxid' : IDL.Text,
@@ -76,8 +69,7 @@ export const idlFactory = ({ IDL }) => {
     'claim_cooling_down' : IDL.Nat64,
     'gamer_register_fee' : IDL.Nat64,
   });
-  const Result_1 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : IDL.Text });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
+  const Result_1 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const CoinBalance = IDL.Record({ 'id' : IDL.Text, 'value' : IDL.Nat });
   const InputCoin = IDL.Record({ 'coin' : CoinBalance, 'from' : IDL.Text });
   const OutputCoin = IDL.Record({ 'to' : IDL.Text, 'coin' : CoinBalance });
@@ -110,28 +102,6 @@ export const idlFactory = ({ IDL }) => {
     'intention_index' : IDL.Nat32,
     'psbt_hex' : IDL.Text,
   });
-  const UserAction = IDL.Variant({
-    'Withdraw' : IDL.Text,
-    'AddLiquidity' : IDL.Null,
-    'Init' : IDL.Null,
-    'Register' : IDL.Text,
-  });
-  const PoolState = IDL.Record({
-    'id' : IDL.Text,
-    'utxo' : Utxo,
-    'user_action' : UserAction,
-    'nonce' : IDL.Nat64,
-  });
-  const Pool = IDL.Record({
-    'states' : IDL.Vec(PoolState),
-    'name' : IDL.Text,
-    'pubkey' : IDL.Text,
-    'key_derivation_path' : IDL.Text,
-    'attributes' : IDL.Text,
-    'address' : IDL.Text,
-    'nonce' : IDL.Nat64,
-    'pending_transaction_counts' : IDL.Nat64,
-  });
   const RuneInfo = IDL.Record({ 'rune_name' : IDL.Text, 'rune_id' : IDL.Text });
   const Gamer = IDL.Record({
     'is_withdrawn' : IDL.Bool,
@@ -144,11 +114,10 @@ export const idlFactory = ({ IDL }) => {
     'claimed_cookies' : IDL.Nat,
     'rune_premine_amount' : IDL.Nat,
     'creator_address' : IDL.Text,
-    'pool' : IDL.Opt(Pool),
     'rune_info' : IDL.Opt(RuneInfo),
     'gamers' : IDL.Vec(IDL.Tuple(IDL.Text, Gamer)),
     'claim_amount_per_click' : IDL.Nat,
-    'game_id' : IDL.Nat64,
+    'game_id' : IDL.Text,
     'game_status' : GameStatus,
     'game_name' : IDL.Text,
     'etch_rune_commit_tx' : IDL.Text,
@@ -156,9 +125,31 @@ export const idlFactory = ({ IDL }) => {
     'gamer_register_fee' : IDL.Nat64,
   });
   const ExchangeState = IDL.Record({
-    'txid_game_map' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat64)),
-    'orchestrator' : IDL.Principal,
-    'games' : IDL.Vec(IDL.Tuple(IDL.Nat64, Game)),
+    'txid_game_map' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+    'games' : IDL.Vec(IDL.Tuple(IDL.Text, Game)),
+  });
+  const UserAction = IDL.Variant({
+    'Withdraw' : IDL.Tuple(IDL.Text, IDL.Text),
+    'AddLiquidity' : IDL.Null,
+    'Init' : IDL.Null,
+    'Register' : IDL.Tuple(IDL.Text, IDL.Text),
+  });
+  const CookiePoolState = IDL.Record({
+    'txid' : IDL.Text,
+    'utxo' : Utxo,
+    'user_action' : UserAction,
+    'nonce' : IDL.Nat64,
+  });
+  const Metadata = IDL.Record({
+    'key' : IDL.Text,
+    'name' : IDL.Text,
+    'key_derivation_path' : IDL.Vec(IDL.Vec(IDL.Nat8)),
+    'address' : IDL.Text,
+  });
+  const GameAndPool = IDL.Record({
+    'game' : Game,
+    'pool_state' : IDL.Opt(CookiePoolState),
+    'pool_metadata' : IDL.Opt(Metadata),
   });
   const GetPoolInfoArgs = IDL.Record({ 'pool_address' : IDL.Text });
   const PoolInfo = IDL.Record({
@@ -179,36 +170,38 @@ export const idlFactory = ({ IDL }) => {
     'block_timestamp' : IDL.Nat64,
     'block_height' : IDL.Nat32,
   });
-  const Result_3 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
+  const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
   const AddLiquidityInfo = IDL.Record({
     'btc_amount_for_add_liquidity' : IDL.Nat64,
     'rune_amount_for_add_liquidity' : IDL.Nat,
   });
-  const RollbackTxArgs = IDL.Record({ 'txid' : IDL.Text });
+  const RollbackTxArgs = IDL.Record({
+    'txid' : IDL.Text,
+    'reason_code' : IDL.Text,
+  });
   return IDL.Service({
-    'claim' : IDL.Func([IDL.Nat64], [Result], []),
+    'claim' : IDL.Func([IDL.Text], [Result], []),
     'create_game' : IDL.Func([CreateGameArgs], [Result_1], []),
-    'etch_rune' : IDL.Func([IDL.Nat64, IDL.Text], [Result_2], []),
-    'execute_tx' : IDL.Func([ExecuteTxArgs], [Result_2], []),
-    'finalize_etch' : IDL.Func([IDL.Nat64], [Result_2], []),
+    'etch_rune' : IDL.Func([IDL.Text, IDL.Text], [Result_1], []),
+    'execute_tx' : IDL.Func([ExecuteTxArgs], [Result_1], []),
+    'finalize_etch' : IDL.Func([IDL.Text], [Result_1], []),
     'get_exchange_state' : IDL.Func([], [ExchangeState], ['query']),
-    'get_game_info' : IDL.Func([IDL.Nat64], [IDL.Opt(Game)], ['query']),
-    'get_game_pool_address' : IDL.Func([IDL.Nat64], [IDL.Text], []),
-    'get_games_info' : IDL.Func([], [IDL.Vec(Game)], ['query']),
+    'get_game_info' : IDL.Func([IDL.Text], [IDL.Opt(GameAndPool)], ['query']),
+    'get_game_pool_address' : IDL.Func([IDL.Text], [IDL.Text], []),
+    'get_games_info' : IDL.Func([], [IDL.Vec(GameAndPool)], ['query']),
     'get_pool_info' : IDL.Func(
         [GetPoolInfoArgs],
         [IDL.Opt(PoolInfo)],
         ['query'],
       ),
     'get_pool_list' : IDL.Func([], [IDL.Vec(PoolBasic)], ['query']),
-    'new_block' : IDL.Func([NewBlockInfo], [Result_3], []),
+    'new_block' : IDL.Func([NewBlockInfo], [Result_2], []),
     'query_add_liquidity_info' : IDL.Func(
-        [IDL.Nat64],
+        [IDL.Text],
         [AddLiquidityInfo],
         ['query'],
       ),
-    'reset_blocks' : IDL.Func([], [], []),
-    'rollback_tx' : IDL.Func([RollbackTxArgs], [Result_3], []),
+    'rollback_tx' : IDL.Func([RollbackTxArgs], [Result_2], []),
   });
 };
-export const init = ({ IDL }) => { return [IDL.Principal]; };
+export const init = ({ IDL }) => { return []; };
