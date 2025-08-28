@@ -79,17 +79,11 @@ impl Service {
     }
 }
 
-
-pub async fn get_etching(txid: String)->Option<GetEtchingResult>{
+pub async fn get_etching(txid: String) -> Option<GetEtchingResult> {
     let rune_indexer_principal = Principal::from_text(RUNE_INDEXER_CANISTER).ok()?;
-    let (result,): (Option<GetEtchingResult>,) = ic_cdk::api::call::call(
-        rune_indexer_principal,
-        "get_etching",
-        (txid,),
-    )
-    .await
-    .ok()?;
+    let (result,): (Option<GetEtchingResult>,) =
+        ic_cdk::api::call::call(rune_indexer_principal, "get_etching", (txid,))
+            .await
+            .ok()?;
     result
-
-
 }

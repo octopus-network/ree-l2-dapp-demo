@@ -6,13 +6,13 @@ use crate::exchange::{CookiePoolState, UserAction};
 
 use crate::*;
 use crate::{utils::get_chain_second_timestamp, AddressStr, ExchangeError, Seconds};
+use errors::*;
 use ic_cdk::api::management_canister::bitcoin::Satoshi;
 use ic_stable_structures::storable::Bound;
 use ic_stable_structures::Storable;
 use ree_exchange_sdk::prelude::PoolStorageAccess;
 use ree_exchange_sdk::types::{CoinId, InputCoin, OutputCoin};
 use serde::{Deserialize, Serialize};
-use errors::*;
 
 use super::gamer::Gamer;
 
@@ -470,7 +470,6 @@ pub enum GameStatus {
 }
 
 impl GameStatus {
-
     pub fn finish_etching(&self) -> GameStatus {
         match self {
             GameStatus::Etching => GameStatus::Playing,
@@ -503,10 +502,12 @@ pub struct CreateGameArgs {
     pub rune_premine_amount: u128,
 }
 
-
 #[test]
 pub fn t() {
-    let raw_v = [77, 110, 135, 112, 3, 247, 168, 241, 210, 15, 6, 190, 50, 208, 49, 84, 144, 42, 254, 134, 162, 175, 66, 72, 92, 153, 48, 20, 2];
+    let raw_v = [
+        77, 110, 135, 112, 3, 247, 168, 241, 210, 15, 6, 190, 50, 208, 49, 84, 144, 42, 254, 134,
+        162, 175, 66, 72, 92, 153, 48, 20, 2,
+    ];
     let s = String::from_utf8(raw_v.to_vec()).unwrap();
     dbg!(&s);
 }

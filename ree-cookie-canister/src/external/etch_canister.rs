@@ -55,21 +55,18 @@ pub enum EtchingStatus {
     Final,
 }
 
-pub async fn get_etching_request(commit_tx: String)-> Option<SendEtchingInfo> {
+pub async fn get_etching_request(commit_tx: String) -> Option<SendEtchingInfo> {
     let etching_principal = Principal::from_text(ETCH_CANISTER_ID).ok()?;
-    let (info,): (Option<SendEtchingInfo>,) = ic_cdk::api::call::call(
-        etching_principal,
-        "get_etching_request",
-        (commit_tx,),
-    )
-    .await
-    .ok()?;
+    let (info,): (Option<SendEtchingInfo>,) =
+        ic_cdk::api::call::call(etching_principal, "get_etching_request", (commit_tx,))
+            .await
+            .ok()?;
     info
 }
 
 pub async fn etching(args: EtchingArgs) -> Result<String, String> {
-
-    let etching_principal = Principal::from_text(ETCH_CANISTER_ID).map_err(|e| format!("Invalid etching canister ID: {}", e))?;
+    let etching_principal = Principal::from_text(ETCH_CANISTER_ID)
+        .map_err(|e| format!("Invalid etching canister ID: {}", e))?;
 
     let approve_args = ApproveArgs {
         from_subaccount: None,
@@ -87,13 +84,13 @@ pub async fn etching(args: EtchingArgs) -> Result<String, String> {
     let result: (Result<Nat, ApproveError>,) = ic_cdk::api::call::call(
         Principal::from_text(ICP_LEDGER_CANISTER_ID).unwrap(),
         "icrc2_approve",
-        (approve_args,)
+        (approve_args,),
     )
     .await
     .map_err(|e| format!("Failed to approve etching canister: {:?}", e))?;
     result
         .0
-        .map_err(|e| format!("Failed to approve etching canister: {:?}", e))?;  
+        .map_err(|e| format!("Failed to approve etching canister: {:?}", e))?;
 
     // client
     //     .approve(ApproveArgs {

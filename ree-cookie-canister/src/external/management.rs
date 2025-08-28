@@ -1,10 +1,10 @@
 use crate::*;
+use errors::*;
 use ic_cdk::api::management_canister::{
     main::CanisterId,
     schnorr::{self, SchnorrAlgorithm, SchnorrKeyId, SchnorrPublicKeyArgument},
 };
 use serde_bytes::ByteBuf;
-use errors::*;
 
 const MGMT_CANISTER_ID: &str = "aaaaa-aa";
 
@@ -12,23 +12,23 @@ fn mgmt_canister_id() -> CanisterId {
     CanisterId::from_text(MGMT_CANISTER_ID).unwrap()
 }
 
-pub(crate) async fn request_schnorr_key(key_name: impl ToString, path: Vec<u8>) -> Result<Pubkey> {
-    let arg = SchnorrPublicKeyArgument {
-        canister_id: None,
-        derivation_path: vec![path],
-        key_id: SchnorrKeyId {
-            algorithm: SchnorrAlgorithm::Bip340secp256k1,
-            name: key_name.to_string(),
-        },
-    };
-    let res = schnorr::schnorr_public_key(arg)
-        .await
-        .map_err(|(_, _)| ExchangeError::ChainKeyError)?;
-    let mut raw = res.0.public_key.to_vec();
-    raw[0] = 0x00;
-    let pubkey = Pubkey::from_raw(raw).expect("management api error: invalid pubkey");
-    Ok(pubkey)
-}
+// pub(crate) async fn request_schnorr_key(key_name: impl ToString, path: Vec<u8>) -> Result<Pubkey> {
+//     let arg = SchnorrPublicKeyArgument {
+//         canister_id: None,
+//         derivation_path: vec![path],
+//         key_id: SchnorrKeyId {
+//             algorithm: SchnorrAlgorithm::Bip340secp256k1,
+//             name: key_name.to_string(),
+//         },
+//     };
+//     let res = schnorr::schnorr_public_key(arg)
+//         .await
+//         .map_err(|(_, _)| ExchangeError::ChainKeyError)?;
+//     let mut raw = res.0.public_key.to_vec();
+//     raw[0] = 0x00;
+//     let pubkey = Pubkey::from_raw(raw).expect("management api error: invalid pubkey");
+//     Ok(pubkey)
+// }
 
 #[derive(Eq, PartialEq, Debug, CandidType, Serialize)]
 pub enum SignWithSchnorrAux {

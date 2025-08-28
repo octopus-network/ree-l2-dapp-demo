@@ -2,11 +2,11 @@ use std::borrow::Cow;
 
 use candid::CandidType;
 use ic_stable_structures::{storable::Bound, Storable};
+use ree_exchange_sdk::prelude::*;
 use ree_exchange_sdk::{
     types::{CoinBalance, Txid, Utxo},
     StateInfo, StateView,
 };
-use ree_exchange_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{AddressStr, GameId};
@@ -343,10 +343,11 @@ pub mod exchange {
     where
         F: FnOnce(&ExchangeState) -> R,
     {
-        State::with(|es| es
-            .get()
-            .as_ref()
-            .map(|s| f(&s))
-            .expect("Failed to get state"))
+        State::with(|es| {
+            es.get()
+                .as_ref()
+                .map(|s| f(&s))
+                .expect("Failed to get state")
+        })
     }
 }

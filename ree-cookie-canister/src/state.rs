@@ -12,9 +12,8 @@ pub struct ExchangeState {
     pub txid_game_map: HashMap<String, GameId>,
 }
 
-
 impl Storable for ExchangeState {
-     fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
         let bytes = bincode::serialize(self).unwrap();
         std::borrow::Cow::Owned(bytes)
     }

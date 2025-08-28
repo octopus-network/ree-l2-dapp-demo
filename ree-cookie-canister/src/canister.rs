@@ -2,7 +2,14 @@ use std::str::FromStr;
 
 pub use crate::log::*;
 use crate::{
-    exchange::{self, exchange::{AddressPrincipalMap, CookiePools, State, __CustomStorageAccess, mutate_state, read_state}, CookiePoolState},
+    exchange::{
+        self,
+        exchange::{
+            AddressPrincipalMap, CookiePools, State, __CustomStorageAccess, mutate_state,
+            read_state,
+        },
+        CookiePoolState,
+    },
     external::{
         etch_canister::{etching, get_etching_request, EtchingArgs, EtchingStatus},
         internal_identity::get_principal,
@@ -11,12 +18,14 @@ use crate::{
     game::game::{CreateGameArgs, Game, GameAndPool, RuneInfo},
     log,
     state::ExchangeState,
-    utils::{request_address, AddLiquidityInfo},
+    utils::AddLiquidityInfo,
     AddressStr, ExchangeError, GameId, DUST_BTC_VALUE,
 };
 use ic_cdk::{init, post_upgrade, query, update};
+use ic_stable_structures::Storable;
 use itertools::Itertools;
 use ree_exchange_sdk::{
+    prelude::schnorr::request_p2tr_address,
     types::{CoinBalance, CoinBalances, CoinId, Txid, Utxo},
     Metadata, PoolStorageAccess,
 };
@@ -66,10 +75,16 @@ pub async fn get_game_pool_address(game_id: GameId) -> AddressStr {
         return pool.metadata().address.to_string();
     } else {
         let key_path = game.key_path();
-        let (_pubkey, _tweaked_pubkey, address) = request_address(key_path)
-            .await
-            .expect("Failed to request address");
-        return address.to_string();
+        // let (_pubkey, _tweaked_pubkey, address) = request_address(key_path)
+        //     .await
+        //     .expect("Failed to request address");
+        let (_pubkey, _tweaked_pubkey, pool_address) = request_p2tr_address(
+            vec![key_path.to_bytes().to_vec()],
+            ree_exchange_sdk::Network::Testnet4,
+        )
+        .await
+        .expect("Failed to request address");
+        return pool_address.to_string();
     }
 }
 
@@ -195,9 +210,13 @@ async fn game_address(game_id: GameId) -> Result<String, String> {
             .ok_or_else(|| format!("Game with ID {} not found", game_id))
     })?;
     let key_path = game.key_path();
-    let (_pubkey, _tweaked_pubkey, pool_address) = request_address(key_path)
-        .await
-        .expect("Failed to request address");
+
+    let (_pubkey, _tweaked_pubkey, pool_address) = request_p2tr_address(
+        vec![key_path.to_bytes().to_vec()],
+        ree_exchange_sdk::Network::Testnet4,
+    )
+    .await
+    .expect("Failed to request address");
 
     Ok(pool_address.to_string())
 }
@@ -218,9 +237,12 @@ async fn etch_rune(game_id: GameId, rune_name: String) -> std::result::Result<St
     );
 
     let key_path = game.key_path();
-    let (_pubkey, _tweaked_pubkey, pool_address) = request_address(key_path)
-        .await
-        .expect("Failed to request address");
+    let (_pubkey, _tweaked_pubkey, pool_address) = request_p2tr_address(
+        vec![key_path.to_bytes().to_vec()],
+        ree_exchange_sdk::Network::Testnet4,
+    )
+    .await
+    .expect("Failed to request address");
 
     let premine_amount = game.premine_rune_amount();
     let args = EtchingArgs {
@@ -284,9 +306,12 @@ pub async fn finalize_etch(game_id: GameId) -> Result<String, String> {
     assert!(result.confirmations >= 1, "Etching not confirmed yet");
 
     let key_path = game.key_path();
-    let (pubkey, _tweaked_pubkey, pool_address) = request_address(key_path.clone())
-        .await
-        .expect("Failed to request address");
+    let (pubkey, _tweaked_pubkey, pool_address) = request_p2tr_address(
+        vec![key_path.to_bytes().to_vec()],
+        ree_exchange_sdk::Network::Testnet4,
+    )
+    .await
+    .expect("Failed to request address");
 
     let mut coin_balances = CoinBalances::new();
     coin_balances.add_coin(&CoinBalance {
