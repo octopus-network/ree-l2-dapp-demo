@@ -1,9 +1,11 @@
+use std::borrow::Cow;
+
 use candid::CandidType;
+use ic_stable_structures::{storable::Bound, Storable};
 use ree_exchange_sdk::{
     types::{CoinBalance, Txid, Utxo},
     StateInfo, StateView,
 };
-// use ree_exchange_sdk::{prelude::*, CoinBalance, Txid, Utxo};
 use ree_exchange_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +25,23 @@ pub struct CookiePoolState {
     pub nonce: u64,
     pub utxo: Utxo,
     pub user_action: UserAction,
+}
+
+impl Storable for CookiePoolState {
+    const BOUND: Bound = Bound::Unbounded;
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        Cow::Owned(bincode::serialize(self).unwrap())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        bincode::deserialize(bytes.as_ref()).unwrap()
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        let mut bytes = vec![];
+        bincode::serialize_into(&mut bytes, &self).unwrap();
+        bytes
+    }
 }
 
 impl StateView for CookiePoolState {
@@ -46,16 +65,22 @@ impl StateView for CookiePoolState {
 #[exchange]
 pub mod exchange {
 
-    use ree_exchange_sdk::types::{bitcoin, Intention, Pubkey};
-
-    use crate::{
-        external::internal_identity::get_principal,
-        memory::{mutate_state, read_state, ADDRESS_PRINCIPLE_MAP},
+    use candid::Principal;
+    use ree_exchange_sdk::store::StorageType;
+    use ree_exchange_sdk::{
+        store::{StableBTreeMap, StableCell},
+        types::{bitcoin, Intention, Pubkey},
     };
 
+    use crate::{external::internal_identity::get_principal, state::ExchangeState};
+
     use super::*;
-    use crate::canister::*;
-    // ic_cdk::export_candid!();
+
+    #[storage(0)]
+    pub type State = StableCell<ExchangeState>;
+
+    #[storage(1)]
+    pub type AddressPrincipalMap = StableBTreeMap<Principal, AddressStr>;
 
     #[pools]
     pub struct CookiePools;
@@ -63,11 +88,11 @@ pub mod exchange {
     impl Pools for CookiePools {
         type State = CookiePoolState;
 
-        const POOL_MEMORY: u8 = 102;
+        const POOL_MEMORY: u8 = 100;
 
-        const BLOCK_MEMORY: u8 = 100;
+        const BLOCK_MEMORY: u8 = 101;
 
-        const TRANSACTION_MEMORY: u8 = 101;
+        const TRANSACTION_MEMORY: u8 = 102;
 
         fn network() -> Network {
             Network::Testnet4
@@ -124,6 +149,10 @@ pub mod exchange {
             for e in rollbacked_states {
                 match e.user_action {
                     UserAction::Register(game_id, address) => {
+                        // State::with_mut(|es| {
+                        //     let game = es.games.get_mut(&game_id).unwrap();
+                        //     game.gamers.remove(&address);
+                        // });
                         mutate_state(|es| {
                             let game = es.games.get_mut(&game_id).unwrap();
                             game.gamers.remove(&address);
@@ -191,7 +220,7 @@ pub mod exchange {
             game.register_new_gamer(initiator.clone())
                 .expect("Failed to register gamer");
         });
-        ADDRESS_PRINCIPLE_MAP.with_borrow_mut(|m| {
+        AddressPrincipalMap::with_mut(|m| {
             m.insert(principal_of_initiator, initiator.clone());
         });
         Ok(new_state)
@@ -249,10 +278,7 @@ pub mod exchange {
     }
 
     #[action]
-    pub async fn withdraw(
-        psbt: &bitcoin::Psbt,
-        args: ActionArgs,
-    ) -> ActionResult<CookiePoolState> {
+    pub async fn withdraw(psbt: &bitcoin::Psbt, args: ActionArgs) -> ActionResult<CookiePoolState> {
         let Intention {
             exchange_id: _,
             action: _,
@@ -299,5 +325,28 @@ pub mod exchange {
         });
 
         Ok(new_state)
+    }
+
+    pub fn mutate_state<F, R>(f: F) -> R
+    where
+        F: FnOnce(&mut ExchangeState) -> R,
+    {
+        State::with_mut(|es| {
+            let mut a = es.get().clone().expect("Failed to get state");
+            let r = f(&mut a);
+            es.set(Some(a));
+            r
+        })
+    }
+
+    pub fn read_state<F, R>(f: F) -> R
+    where
+        F: FnOnce(&ExchangeState) -> R,
+    {
+        State::with(|es| es
+            .get()
+            .as_ref()
+            .map(|s| f(&s))
+            .expect("Failed to get state"))
     }
 }

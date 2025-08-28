@@ -39,14 +39,6 @@ impl ExchangeState {
     }
 }
 
-// #[derive(Deserialize, Serialize, Clone, Debug, CandidType)]
-// pub enum UserAction {
-//     Init,
-//     AddLiquidity,
-//     Register(AddressStr),
-//     Withdraw(AddressStr),
-// }
-
 #[test]
 pub fn test() {
     let input = "225; 209; 222; 36; 248; 96; 118; 238; 2; 172; 201; 226; 207; 83; 78; 83; 28; 133; 229; 192; 29; 162; 40; 195; 199; 202; 155; 62; 2";

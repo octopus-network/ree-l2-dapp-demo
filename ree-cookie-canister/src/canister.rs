@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 pub use crate::log::*;
 use crate::{
-    exchange::{self, exchange::CookiePools, CookiePoolState},
+    exchange::{self, exchange::{AddressPrincipalMap, CookiePools, State, __CustomStorageAccess, mutate_state, read_state}, CookiePoolState},
     external::{
         etch_canister::{etching, get_etching_request, EtchingArgs, EtchingStatus},
         internal_identity::get_principal,
@@ -10,12 +10,10 @@ use crate::{
     },
     game::game::{CreateGameArgs, Game, GameAndPool, RuneInfo},
     log,
-    memory::{mutate_state, read_state, set_state, ADDRESS_PRINCIPLE_MAP, GAME_POOLS},
     state::ExchangeState,
     utils::{request_address, AddLiquidityInfo},
     AddressStr, ExchangeError, GameId, DUST_BTC_VALUE,
 };
-use candid::types::principal;
 use ic_cdk::{init, post_upgrade, query, update};
 use itertools::Itertools;
 use ree_exchange_sdk::{
@@ -25,7 +23,9 @@ use ree_exchange_sdk::{
 
 #[init]
 fn init() {
-    set_state(ExchangeState::init());
+    State::with_mut(|s| {
+        s.set(Some(ExchangeState::default()));
+    });
 }
 
 #[update]
@@ -73,17 +73,6 @@ pub async fn get_game_pool_address(game_id: GameId) -> AddressStr {
     }
 }
 
-// #[update]
-// pub async fn create_pool() {
-//     exchange::exchange::new_pool_by_utxo(
-//         pool_name,
-//         key_path,
-//         pubkey,
-//         address,
-//         utxo
-//     );
-// }
-
 #[query]
 fn get_exchange_state() -> ExchangeState {
     read_state(|s| s.clone())
@@ -95,7 +84,7 @@ fn get_games_info() -> Vec<GameAndPool> {
 
     let mut game_and_pool_list = vec![];
     for game in games {
-        let pool_address_opt = GAME_POOLS.with_borrow(|m| m.get(&game.game_id));
+        let pool_address_opt = game.pool_address.clone();
 
         let pool = pool_address_opt
             .map(|pool_address| {
@@ -119,11 +108,12 @@ fn get_games_info() -> Vec<GameAndPool> {
 
 #[query]
 fn get_game_info(game_id: GameId) -> Option<GameAndPool> {
-    let game = read_state(|s| s.games.get(&game_id).cloned());
-    if game.is_none() {
+    let game_opt = read_state(|s| s.games.get(&game_id).cloned());
+    if game_opt.is_none() {
         return None;
     }
-    let pool_address_opt = GAME_POOLS.with_borrow(|m| m.get(&game_id));
+    let game = game_opt.unwrap();
+    let pool_address_opt = game.pool_address.clone();
     let pool = pool_address_opt
         .map(|pool_address| {
             exchange::exchange::CookiePools::get(&pool_address)
@@ -131,7 +121,7 @@ fn get_game_info(game_id: GameId) -> Option<GameAndPool> {
         })
         .unwrap_or(None);
 
-    game.map(|game| GameAndPool {
+    Some(GameAndPool {
         game,
         pool_metadata: pool.clone().map(|p| p.0),
         pool_state: pool.map(|p| p.1),
@@ -142,7 +132,7 @@ fn get_game_info(game_id: GameId) -> Option<GameAndPool> {
 pub fn claim(game_id: GameId) -> Result<u128, ExchangeError> {
     let principal = ic_cdk::caller();
 
-    let address = crate::memory::ADDRESS_PRINCIPLE_MAP.with_borrow(|m| {
+    let address = AddressPrincipalMap::with(|m| {
         m.get(&principal)
             .ok_or(ExchangeError::GamerNotFound(principal.to_text().clone()))
     })?;
@@ -159,9 +149,9 @@ pub fn claim(game_id: GameId) -> Result<u128, ExchangeError> {
 pub async fn test() {
     let pool_name = "test_pool".to_string();
     let key_path = "test_key_path".to_string();
-    let (pubkey, _tweaked_pubkey, pool_address) = request_address(key_path.clone())
+    let metadata = Metadata::generate_new::<CookiePools>(pool_name.clone(), key_path.clone())
         .await
-        .expect("Failed to request address");
+        .expect("Failed to call chain-key API");
 
     let mut coin_balances = CoinBalances::new();
     coin_balances.add_coin(&CoinBalance {
@@ -172,8 +162,8 @@ pub async fn test() {
     exchange::exchange::new_pool_by_utxo(
         pool_name,
         key_path,
-        pubkey,
-        pool_address.to_string(),
+        metadata.key,
+        metadata.address.to_string(),
         Utxo {
             txid: Txid::from_str(
                 "4d3f5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
@@ -184,9 +174,32 @@ pub async fn test() {
             sats: DUST_BTC_VALUE,
         },
     );
-    GAME_POOLS.with_borrow_mut(|m| {
-        m.insert("111".to_string(), pool_address.to_string());
+
+    mutate_state(|es| {
+        es.games.get_mut(&"111".to_string()).map(|game| {
+            game.pool_address = Some(metadata.address.to_string());
+        })
     });
+
+    // GAME_POOLS.with_borrow_mut(|m| {
+    //     m.insert("111".to_string(), metadata.address.to_string());
+    // });
+}
+
+#[update]
+async fn game_address(game_id: GameId) -> Result<String, String> {
+    let game = read_state(|s| {
+        s.games
+            .get(&game_id)
+            .cloned()
+            .ok_or_else(|| format!("Game with ID {} not found", game_id))
+    })?;
+    let key_path = game.key_path();
+    let (_pubkey, _tweaked_pubkey, pool_address) = request_address(key_path)
+        .await
+        .expect("Failed to request address");
+
+    Ok(pool_address.to_string())
 }
 
 #[update]
@@ -305,12 +318,9 @@ pub async fn finalize_etch(game_id: GameId) -> Result<String, String> {
         old_rune_info.rune_id = CoinId::from_str(result.rune_id.as_str())
             .expect("Failed to parse rune ID from etching result");
         game.rune_info = Some(old_rune_info);
+        game.pool_address = Some(pool_address.to_string());
 
         game.game_status = game.game_status.finish_etching();
-    });
-
-    GAME_POOLS.with_borrow_mut(|m| {
-        m.insert(game_id.clone(), pool_address.to_string());
     });
 
     Ok(reveal_tx_id)

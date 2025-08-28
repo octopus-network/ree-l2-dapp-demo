@@ -83,6 +83,7 @@ type Game = record {
   game_status : GameStatus;
   game_name : text;
   etch_rune_commit_tx : text;
+  pool_address : opt text;
   claim_cooling_down : nat64;
   gamer_register_fee : nat64;
 };
@@ -173,6 +174,7 @@ service : () -> {
   etch_rune : (text, text) -> (Result_1);
   execute_tx : (ExecuteTxArgs) -> (Result_1);
   finalize_etch : (text) -> (Result_1);
+  game_address : (text) -> (Result_1);
   get_exchange_state : () -> (ExchangeState) query;
   get_game_info : (text) -> (opt GameAndPool) query;
   get_game_pool_address : (text) -> (text);

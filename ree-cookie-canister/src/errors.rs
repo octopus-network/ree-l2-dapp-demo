@@ -86,9 +86,6 @@ pub enum ExchangeError {
     #[error("Invalid block, height: {0}, depth: {1}")]
     Recoverable(u32, u32),
 
-    // #[error("Reorg error: {0}")]
-    // ReorgError(#[from] reorg::ReorgError),
-
     #[error("Pool address mismatch, expected: {expected}, actual: {actual}")]
     PoolAddressMismatch {
         expected: AddressStr,

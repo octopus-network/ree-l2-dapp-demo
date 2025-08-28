@@ -3,8 +3,6 @@ pub mod errors;
 pub mod external;
 pub mod game;
 pub mod log;
-pub mod memory;
-pub mod reorg;
 pub mod state;
 pub mod utils;
 pub mod exchange;

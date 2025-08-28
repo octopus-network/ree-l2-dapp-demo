@@ -1,6 +1,4 @@
 use candid::{CandidType, Nat, Principal};
-use icrc_ledger_client::ICRC1Client;
-// use icrc_ledger_client_cdk::{CdkRuntime, ICRC1Client};
 use icrc_ledger_types::{
     icrc1::account::Account,
     icrc2::approve::{ApproveArgs, ApproveError},
@@ -70,10 +68,6 @@ pub async fn get_etching_request(commit_tx: String)-> Option<SendEtchingInfo> {
 }
 
 pub async fn etching(args: EtchingArgs) -> Result<String, String> {
-    // let client = ICRC1Client {
-    //     runtime: CdkRuntime,
-    //     ledger_canister_id: Principal::from_text(ICP_LEDGER_CANISTER_ID).unwrap(),
-    // };
 
     let etching_principal = Principal::from_text(ETCH_CANISTER_ID).map_err(|e| format!("Invalid etching canister ID: {}", e))?;
 
