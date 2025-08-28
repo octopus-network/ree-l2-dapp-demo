@@ -1883,7 +1883,7 @@ dependencies = [
 [[package]]
 name = "ree-exchange-sdk"
 version = "0.10.0"
-source = "git+https://github.com/octopus-network/ree-exchange-sdk.git?rev=1fb9900d60081f262cc6ad9c92a3604ae38612e1#1fb9900d60081f262cc6ad9c92a3604ae38612e1"
+source = "git+https://github.com/octopus-network/ree-exchange-sdk.git?rev=9dedff405c1afccc31cb5551bc29616110483e48#9dedff405c1afccc31cb5551bc29616110483e48"
 dependencies = [
  "bincode",
  "candid",
@@ -1898,7 +1898,7 @@ dependencies = [
 [[package]]
 name = "ree-exchange-sdk-macro"
 version = "0.10.0"
-source = "git+https://github.com/octopus-network/ree-exchange-sdk.git?rev=1fb9900d60081f262cc6ad9c92a3604ae38612e1#1fb9900d60081f262cc6ad9c92a3604ae38612e1"
+source = "git+https://github.com/octopus-network/ree-exchange-sdk.git?rev=9dedff405c1afccc31cb5551bc29616110483e48#9dedff405c1afccc31cb5551bc29616110483e48"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1908,7 +1908,7 @@ dependencies = [
 [[package]]
 name = "ree-types"
 version = "0.10.0"
-source = "git+https://github.com/octopus-network/ree-exchange-sdk.git?rev=1fb9900d60081f262cc6ad9c92a3604ae38612e1#1fb9900d60081f262cc6ad9c92a3604ae38612e1"
+source = "git+https://github.com/octopus-network/ree-exchange-sdk.git?rev=9dedff405c1afccc31cb5551bc29616110483e48#9dedff405c1afccc31cb5551bc29616110483e48"
 dependencies = [
  "anyhow",
  "bincode",

@@ -33,7 +33,7 @@ cfg-if = "1.0"
 time = "0.3"
 
 # ree-exchange-sdk = { git = "https://github.com/octopus-network/ree-exchange-sdk.git", rev="b5bb7181449d3535de27239a6c0a03fbcf29e418" }
-ree-exchange-sdk = { git = "https://github.com/octopus-network/ree-exchange-sdk.git", rev="1fb9900d60081f262cc6ad9c92a3604ae38612e1" }
+ree-exchange-sdk = { git = "https://github.com/octopus-network/ree-exchange-sdk.git", rev="9dedff405c1afccc31cb5551bc29616110483e48" }
 
 bincode = "1.3.3"
 itertools = "0.14.0"

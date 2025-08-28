@@ -161,47 +161,6 @@ pub fn claim(game_id: GameId) -> Result<u128, ExchangeError> {
 }
 
 #[update]
-pub async fn test() {
-    let pool_name = "test_pool".to_string();
-    let key_path = "test_key_path".to_string();
-    let metadata = Metadata::generate_new::<CookiePools>(pool_name.clone(), key_path.clone())
-        .await
-        .expect("Failed to call chain-key API");
-
-    let mut coin_balances = CoinBalances::new();
-    coin_balances.add_coin(&CoinBalance {
-        id: CoinId::btc(),
-        value: DUST_BTC_VALUE as u128,
-    });
-
-    exchange::exchange::new_pool_by_utxo(
-        pool_name,
-        key_path,
-        metadata.key,
-        metadata.address.to_string(),
-        Utxo {
-            txid: Txid::from_str(
-                "4d3f5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
-            )
-            .unwrap(),
-            vout: 1,
-            coins: coin_balances,
-            sats: DUST_BTC_VALUE,
-        },
-    );
-
-    mutate_state(|es| {
-        es.games.get_mut(&"111".to_string()).map(|game| {
-            game.pool_address = Some(metadata.address.to_string());
-        })
-    });
-
-    // GAME_POOLS.with_borrow_mut(|m| {
-    //     m.insert("111".to_string(), metadata.address.to_string());
-    // });
-}
-
-#[update]
 async fn game_address(game_id: GameId) -> Result<String, String> {
     let game = read_state(|s| {
         s.games

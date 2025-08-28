@@ -66,7 +66,6 @@ impl StateView for CookiePoolState {
 pub mod exchange {
 
     use candid::Principal;
-    use ree_exchange_sdk::store::StorageType;
     use ree_exchange_sdk::{
         store::{StableBTreeMap, StableCell},
         types::{bitcoin, Intention, Pubkey},
@@ -173,7 +172,7 @@ pub mod exchange {
     }
 
     #[action]
-    pub async fn register(psbt: &bitcoin::Psbt, args: ActionArgs) -> ActionResult<CookiePoolState> {
+    pub async fn register(_psbt: &bitcoin::Psbt, args: ActionArgs) -> ActionResult<CookiePoolState> {
         let Intention {
             exchange_id: _,
             action: _,
@@ -199,7 +198,7 @@ pub mod exchange {
                 .cloned()
                 .ok_or("Game not found".to_string())
         })?;
-        let (new_state, (key_derivation_path, utxo)) = game
+        let (new_state, (_key_derivation_path, _utxo)) = game
             .validate_register(
                 pool_address.clone(),
                 args.txid.clone(),
@@ -228,7 +227,7 @@ pub mod exchange {
 
     #[action]
     pub async fn add_liquidity(
-        psbt: &bitcoin::Psbt,
+        _psbt: &bitcoin::Psbt,
         args: ActionArgs,
     ) -> ActionResult<CookiePoolState> {
         let Intention {
@@ -256,7 +255,7 @@ pub mod exchange {
                 .cloned()
                 .ok_or("Game not found".to_string())
         })?;
-        let (new_state, (key_derivation_path, utxo)) = game
+        let (new_state, (_key_derivation_path, _utxo)) = game
             .validate_add_liquidity(
                 pool_address.clone(),
                 args.txid.clone(),
@@ -278,7 +277,7 @@ pub mod exchange {
     }
 
     #[action]
-    pub async fn withdraw(psbt: &bitcoin::Psbt, args: ActionArgs) -> ActionResult<CookiePoolState> {
+    pub async fn withdraw(_psbt: &bitcoin::Psbt, args: ActionArgs) -> ActionResult<CookiePoolState> {
         let Intention {
             exchange_id: _,
             action: _,
@@ -304,7 +303,7 @@ pub mod exchange {
                 .cloned()
                 .ok_or("Game not found".to_string())
         })?;
-        let (new_state, (key_derivation_path, utxo)) = game
+        let (new_state, (_key_derivation_path, _utxo)) = game
             .validate_withdraw(
                 pool_address.clone(),
                 args.txid.clone(),
