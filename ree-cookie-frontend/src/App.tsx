@@ -3,6 +3,7 @@ import { LoadingOrError } from "components/LoadingOrError";
 import { CreateGameModal } from "components/modals/CreateGameModal";
 import { Topbar } from "layout/Topbar";
 import { Debug } from "pages/Debug";
+import { Etch } from "pages/Etch";
 import { GameDetail } from "pages/Game";
 import { Home } from "pages/Home";
 import { lazy, Suspense } from "react";
@@ -23,6 +24,7 @@ export function App() {
             <Route element={<Home />} index={true} />
             <Route element={<GameDetail />} path="/game/:game_id" />
             <Route path='/debug/:address' element={<Debug />} />
+            <Route path='/etch' element={<Etch />} />
           </Routes>
           <CreateGameModal />
           <ConnectWalletModal />

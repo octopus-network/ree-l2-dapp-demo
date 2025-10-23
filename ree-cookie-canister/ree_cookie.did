@@ -17,6 +17,16 @@ type CreateGameArgs = record {
   claim_cooling_down : nat64;
   gamer_register_fee : nat64;
 };
+type EtchingArgs = record {
+  terms : opt OrdinalsTerms;
+  turbo : bool;
+  premine : opt nat;
+  logo : opt LogoParams;
+  rune_name : text;
+  divisibility : opt nat8;
+  premine_receiver : text;
+  symbol : opt text;
+};
 type ExchangeError = variant {
   InvalidSignPsbtArgs : text;
   InvalidNumeric;
@@ -117,6 +127,7 @@ type IntentionSet = record {
   initiator_address : text;
   intentions : vec Intention;
 };
+type LogoParams = record { content_type : text; content_base64 : text };
 type Metadata = record {
   key : text;
   name : text;
@@ -128,6 +139,12 @@ type NewBlockInfo = record {
   confirmed_txids : vec text;
   block_timestamp : nat64;
   block_height : nat32;
+};
+type OrdinalsTerms = record {
+  cap : nat;
+  height : record { opt nat64; opt nat64 };
+  offset : record { opt nat64; opt nat64 };
+  amount : nat;
 };
 type OutputCoin = record { to : text; coin : CoinBalance };
 type PoolBasic = record { name : text; address : text };
@@ -171,6 +188,7 @@ type Utxo = record {
 service : () -> {
   claim : (text) -> (Result);
   create_game : (CreateGameArgs) -> (Result_1);
+  etch : (EtchingArgs) -> (Result_1);
   etch_rune : (text, text) -> (Result_1);
   execute_tx : (ExecuteTxArgs) -> (Result_1);
   finalize_etch : (text) -> (Result_1);
@@ -183,6 +201,6 @@ service : () -> {
   get_pool_list : () -> (vec PoolBasic) query;
   new_block : (NewBlockInfo) -> (Result_2);
   query_add_liquidity_info : (text) -> (AddLiquidityInfo) query;
+  query_etching_list : (text) -> (vec text) query;
   rollback_tx : (RollbackTxArgs) -> (Result_2);
-  test : () -> ();
 }

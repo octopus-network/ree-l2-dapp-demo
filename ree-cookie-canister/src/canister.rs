@@ -6,7 +6,7 @@ use crate::{
         self,
         exchange::{
             AddressPrincipalMap, CookiePools, State, __CustomStorageAccess, mutate_state,
-            read_state,
+            read_state, ReceiverRunesMap,
         },
         CookiePoolState,
     },
@@ -181,6 +181,26 @@ async fn game_address(game_id: GameId) -> Result<String, String> {
 }
 
 #[update]
+pub async fn etch(args: EtchingArgs) ->Result<String, String> {
+    let commit_tx = etching(args.clone())
+        .await
+        .map_err(|e| format!("Failed to etch rune: {}", e))?;
+
+    ReceiverRunesMap::with_mut(|m| {
+        let mut runes = m.get(&args.premine_receiver.clone()).unwrap_or_default();
+        runes.commit_txs.push(commit_tx.clone());
+        m.insert(args.premine_receiver.clone(), runes);
+    });
+    
+    Ok(commit_tx)
+}
+
+#[query]
+pub async fn query_etching_list(receiver: AddressStr) -> Vec<String> {
+    ReceiverRunesMap::with(|m| m.get(&receiver).unwrap_or_default().commit_txs)
+}
+
+#[update]
 async fn etch_rune(game_id: GameId, rune_name: String) -> std::result::Result<String, String> {
     let game = read_state(|s| {
         s.games
@@ -336,16 +356,6 @@ fn http_request(req: ic_http_types::HttpRequest) -> ic_http_types::HttpResponse 
 
 #[post_upgrade]
 fn post_upgrade() {
-    mutate_state(|es| {
-        es.games.get_mut(&"0".to_string()).map(|game| {
-            game.etch_rune_commit_tx =
-                "343658c5f1937d38f9db2fe65d43a3cd7a96054b31387b148d511be3e6a9292b".to_string();
-            game.rune_info = Some(RuneInfo {
-                rune_id: CoinId::btc(),
-                rune_name: "TEST•COOKIE•VWG".to_string(),
-            });
-        })
-    });
 
     log!(
         INFO,

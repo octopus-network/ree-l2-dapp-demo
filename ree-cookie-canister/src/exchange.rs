@@ -71,7 +71,7 @@ pub mod exchange {
         types::{bitcoin, Intention, Pubkey},
     };
 
-    use crate::{external::internal_identity::get_principal, state::ExchangeState};
+    use crate::{external::internal_identity::get_principal, state::ExchangeState, utils::RuneCommitList};
 
     use super::*;
 
@@ -80,6 +80,9 @@ pub mod exchange {
 
     #[storage(1)]
     pub type AddressPrincipalMap = StableBTreeMap<Principal, AddressStr>;
+
+    #[storage(2)]
+    pub type ReceiverRunesMap = StableBTreeMap<AddressStr, RuneCommitList>;
 
     #[pools]
     pub struct CookiePools;
@@ -349,4 +352,10 @@ pub mod exchange {
                 .expect("Failed to get state")
         })
     }
+}
+
+
+#[test]
+pub fn test() {
+    let empty_txid = Txid::zero();
 }

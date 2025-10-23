@@ -21,6 +21,16 @@ export interface CreateGameArgs {
   'claim_cooling_down' : bigint,
   'gamer_register_fee' : bigint,
 }
+export interface EtchingArgs {
+  'terms' : [] | [OrdinalsTerms],
+  'turbo' : boolean,
+  'premine' : [] | [bigint],
+  'logo' : [] | [LogoParams],
+  'rune_name' : string,
+  'divisibility' : [] | [number],
+  'premine_receiver' : string,
+  'symbol' : [] | [string],
+}
 export type ExchangeError = { 'InvalidSignPsbtArgs' : string } |
   { 'InvalidNumeric' : null } |
   { 'ParseUtxoRuneBalanceError' : string } |
@@ -85,6 +95,7 @@ export interface Game {
   'game_status' : GameStatus,
   'game_name' : string,
   'etch_rune_commit_tx' : string,
+  'pool_address' : [] | [string],
   'claim_cooling_down' : bigint,
   'gamer_register_fee' : bigint,
 }
@@ -121,6 +132,10 @@ export interface IntentionSet {
   'initiator_address' : string,
   'intentions' : Array<Intention>,
 }
+export interface LogoParams {
+  'content_type' : string,
+  'content_base64' : string,
+}
 export interface Metadata {
   'key' : string,
   'name' : string,
@@ -132,6 +147,12 @@ export interface NewBlockInfo {
   'confirmed_txids' : Array<string>,
   'block_timestamp' : bigint,
   'block_height' : number,
+}
+export interface OrdinalsTerms {
+  'cap' : bigint,
+  'height' : [[] | [bigint], [] | [bigint]],
+  'offset' : [[] | [bigint], [] | [bigint]],
+  'amount' : bigint,
 }
 export interface OutputCoin { 'to' : string, 'coin' : CoinBalance }
 export interface PoolBasic { 'name' : string, 'address' : string }
@@ -174,9 +195,11 @@ export interface Utxo {
 export interface _SERVICE {
   'claim' : ActorMethod<[string], Result>,
   'create_game' : ActorMethod<[CreateGameArgs], Result_1>,
+  'etch' : ActorMethod<[EtchingArgs], Result_1>,
   'etch_rune' : ActorMethod<[string, string], Result_1>,
   'execute_tx' : ActorMethod<[ExecuteTxArgs], Result_1>,
   'finalize_etch' : ActorMethod<[string], Result_1>,
+  'game_address' : ActorMethod<[string], Result_1>,
   'get_exchange_state' : ActorMethod<[], ExchangeState>,
   'get_game_info' : ActorMethod<[string], [] | [GameAndPool]>,
   'get_game_pool_address' : ActorMethod<[string], string>,
@@ -185,6 +208,7 @@ export interface _SERVICE {
   'get_pool_list' : ActorMethod<[], Array<PoolBasic>>,
   'new_block' : ActorMethod<[NewBlockInfo], Result_2>,
   'query_add_liquidity_info' : ActorMethod<[string], AddLiquidityInfo>,
+  'query_etching_list' : ActorMethod<[string], Array<string>>,
   'rollback_tx' : ActorMethod<[RollbackTxArgs], Result_2>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;

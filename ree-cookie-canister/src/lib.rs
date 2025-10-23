@@ -23,7 +23,8 @@ use ree_exchange_sdk::{
 };
 pub use serde::{Deserialize, Serialize};
 use state::ExchangeState;
-use utils::AddLiquidityInfo;
+use utils::{AddLiquidityInfo, RuneCommitList};
+use external::etch_canister::{EtchingArgs, SendEtchingInfo};
 
 pub const SIWB_TESTNET_CANISTER: &'static str = "stxih-wyaaa-aaaah-aq2la-cai";
 pub const RUNE_INDEXER_CANISTER: &'static str = "f2dwm-caaaa-aaaao-qjxlq-cai";

@@ -70,6 +70,26 @@ export const idlFactory = ({ IDL }) => {
     'gamer_register_fee' : IDL.Nat64,
   });
   const Result_1 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
+  const OrdinalsTerms = IDL.Record({
+    'cap' : IDL.Nat,
+    'height' : IDL.Tuple(IDL.Opt(IDL.Nat64), IDL.Opt(IDL.Nat64)),
+    'offset' : IDL.Tuple(IDL.Opt(IDL.Nat64), IDL.Opt(IDL.Nat64)),
+    'amount' : IDL.Nat,
+  });
+  const LogoParams = IDL.Record({
+    'content_type' : IDL.Text,
+    'content_base64' : IDL.Text,
+  });
+  const EtchingArgs = IDL.Record({
+    'terms' : IDL.Opt(OrdinalsTerms),
+    'turbo' : IDL.Bool,
+    'premine' : IDL.Opt(IDL.Nat),
+    'logo' : IDL.Opt(LogoParams),
+    'rune_name' : IDL.Text,
+    'divisibility' : IDL.Opt(IDL.Nat8),
+    'premine_receiver' : IDL.Text,
+    'symbol' : IDL.Opt(IDL.Text),
+  });
   const CoinBalance = IDL.Record({ 'id' : IDL.Text, 'value' : IDL.Nat });
   const InputCoin = IDL.Record({ 'coin' : CoinBalance, 'from' : IDL.Text });
   const OutputCoin = IDL.Record({ 'to' : IDL.Text, 'coin' : CoinBalance });
@@ -121,6 +141,7 @@ export const idlFactory = ({ IDL }) => {
     'game_status' : GameStatus,
     'game_name' : IDL.Text,
     'etch_rune_commit_tx' : IDL.Text,
+    'pool_address' : IDL.Opt(IDL.Text),
     'claim_cooling_down' : IDL.Nat64,
     'gamer_register_fee' : IDL.Nat64,
   });
@@ -182,9 +203,11 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     'claim' : IDL.Func([IDL.Text], [Result], []),
     'create_game' : IDL.Func([CreateGameArgs], [Result_1], []),
+    'etch' : IDL.Func([EtchingArgs], [Result_1], []),
     'etch_rune' : IDL.Func([IDL.Text, IDL.Text], [Result_1], []),
     'execute_tx' : IDL.Func([ExecuteTxArgs], [Result_1], []),
     'finalize_etch' : IDL.Func([IDL.Text], [Result_1], []),
+    'game_address' : IDL.Func([IDL.Text], [Result_1], []),
     'get_exchange_state' : IDL.Func([], [ExchangeState], ['query']),
     'get_game_info' : IDL.Func([IDL.Text], [IDL.Opt(GameAndPool)], ['query']),
     'get_game_pool_address' : IDL.Func([IDL.Text], [IDL.Text], []),
@@ -201,6 +224,7 @@ export const idlFactory = ({ IDL }) => {
         [AddLiquidityInfo],
         ['query'],
       ),
+    'query_etching_list' : IDL.Func([IDL.Text], [IDL.Vec(IDL.Text)], ['query']),
     'rollback_tx' : IDL.Func([RollbackTxArgs], [Result_2], []),
   });
 };
