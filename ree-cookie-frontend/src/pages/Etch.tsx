@@ -38,7 +38,7 @@ function Etching({}: {}) {
   };
 
   return (
-    <div className="flex flex-col items-center text-black">
+    <div className="flex flex-col items-center text-black bg-gray-200 pb-40">
       <div className="w-100 m-10">
         <p>
           Please transfer 1 $ICP to this canister before etch: <br />
