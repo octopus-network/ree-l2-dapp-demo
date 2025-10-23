@@ -32,7 +32,7 @@ function Etching({}: {}) {
       logo: [],
       rune_name: values.rune_name || "",
       divisibility: values.divisibility ? [Number(values.divisibility)] : [],
-      premine_receiver: values.premine_receiver || "",
+      premine_receiver: values.premine_receiver!,
       symbol: values.symbol ? [values.symbol] : [],
     });
   };
@@ -78,7 +78,7 @@ function Etching({}: {}) {
         </Form.Item>
         <Form.Item<FieldType>
           name="premine_receiver"
-          label="Premine Receiver(optional)"
+          label="Premine Receiver"
         >
           <Input placeholder="Enter something" />
         </Form.Item>
