@@ -34,6 +34,15 @@ function Etching({}: {}) {
       divisibility: values.divisibility ? [Number(values.divisibility)] : [],
       premine_receiver: values.premine_receiver!,
       symbol: values.symbol ? [values.symbol] : [],
+    }).then((e)=> {
+        console.log("etching result:", e);
+        if ('Error' in e) throw new Error(`Etching failed: ${JSON.stringify(e.Error)}`);
+        if ('Ok' in e) {
+          alert(`Etching submitted successfully! Commit TXID: ${e.Ok}`);
+        }
+
+    }).catch((err) => {
+        alert(`Etching failed: ${err.message}`);
     });
   };
 
